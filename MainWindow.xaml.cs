@@ -3,7 +3,9 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +22,8 @@ namespace FilterV1
         private int _rowsRemoved;
         private bool _removeEqualsApplied;
         private bool _removeLVApplied;
+        private List<GroupDefinition> _customGroups;
+        private readonly string _settingsFilePath;
 
         public MainWindow()
         {
@@ -28,6 +32,60 @@ namespace FilterV1
             _rowsRemoved = 0;
             _removeEqualsApplied = false;
             _removeLVApplied = false;
+
+            // Set up settings file path
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appDataPath, "FilterV1");
+            Directory.CreateDirectory(appFolder);
+            _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
+
+            // Load custom groups from settings or use defaults
+            LoadCustomGroups();
+        }
+
+        private void LoadCustomGroups()
+        {
+            try
+            {
+                if (File.Exists(_settingsFilePath))
+                {
+                    string json = File.ReadAllText(_settingsFilePath);
+                    _customGroups = JsonSerializer.Deserialize<List<GroupDefinition>>(json) ?? GetDefaultGroups();
+                }
+                else
+                {
+                    _customGroups = GetDefaultGroups();
+                    SaveCustomGroups();
+                }
+            }
+            catch (Exception)
+            {
+                _customGroups = GetDefaultGroups();
+            }
+        }
+
+        private void SaveCustomGroups()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_customGroups, options);
+                File.WriteAllText(_settingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save group settings: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private List<GroupDefinition> GetDefaultGroups()
+        {
+            return new List<GroupDefinition>
+            {
+                new GroupDefinition { GroupName = "X1 Group", ContainsText = "X1:", Priority = 1 },
+                new GroupDefinition { GroupName = "F11 Group", ContainsText = "F11-X", Priority = 2 }
+            };
         }
 
         private void UploadButton_Click(object sender, RoutedEventArgs e)
@@ -408,17 +466,35 @@ namespace FilterV1
                 return;
             }
 
+            // Open the custom group window with current groups
+            var window = new CustomGroupWindow(_customGroups, groupDefinitions =>
+            {
+                _customGroups = groupDefinitions;
+                SaveCustomGroups(); // Save to persistent storage
+                ApplyCustomSort();
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
+        private void ApplyCustomSort()
+        {
+            if (_dataTable == null) return;
+
             SaveState();
 
+            // Swap columns 5 and 6 if column 6 contains target text and column 5 doesn't
             if (_dataTable.Columns.Count >= 6)
             {
                 for (int i = 0; i < _dataTable.Rows.Count; i++)
                 {
                     string col5Value = _dataTable.Rows[i][4]?.ToString() ?? "";
                     string col6Value = _dataTable.Rows[i][5]?.ToString() ?? "";
-                    bool col5IsTarget = col5Value.Contains("X1:") || col5Value.Contains("F11-X");
-                    bool col6IsTarget = col6Value.Contains("X1:") || col6Value.Contains("F11-X");
-                    if (col6IsTarget && !col5IsTarget)
+
+                    bool col5HasTarget = _customGroups.Any(g => col5Value.Contains(g.ContainsText) || col6Value.Contains(g.ContainsText));
+                    bool col6HasTarget = _customGroups.Any(g => col6Value.Contains(g.ContainsText) || col5Value.Contains(g.ContainsText));
+
+                    if (col6HasTarget && !col5HasTarget)
                     {
                         _dataTable.Rows[i][4] = col6Value;
                         _dataTable.Rows[i][5] = col5Value;
@@ -426,82 +502,110 @@ namespace FilterV1
                 }
             }
 
-            var x1Rows = new List<(string Prefix, DataRow Row)>();
-            var f11Rows = new List<(string Prefix, DataRow Row)>();
-            var otherRows = new List<DataRow>();
-            for (int i = 0; i < _dataTable.Rows.Count; i++)
+            // Group rows based on custom definitions with priority-based assignment
+            var groupedRows = new List<(GroupDefinition Group, List<DataRow> Rows)>();
+            var ungroupedRows = new List<DataRow>();
+
+            // Sort groups by priority (ascending - lower number = higher priority)
+            var sortedGroups = _customGroups.OrderBy(g => g.Priority).ToList();
+
+            // Track which rows have been assigned to prevent double-assignment
+            var assignedRows = new HashSet<DataRow>();
+
+            // Process each group definition in priority order (highest priority first)
+            foreach (var group in sortedGroups)
             {
-                string col5Value = _dataTable.Rows[i][4]?.ToString() ?? "";
-                if (col5Value.Contains("X1:"))
+                var matchingRows = new List<DataRow>();
+
+                for (int i = 0; i < _dataTable.Rows.Count; i++)
                 {
-                    string prefix = col5Value.Split('-').FirstOrDefault() ?? col5Value;
-                    x1Rows.Add((prefix, _dataTable.Rows[i]));
+                    var row = _dataTable.Rows[i];
+
+                    // Skip if this row is already assigned to a higher priority group
+                    if (assignedRows.Contains(row)) continue;
+
+                    string col5Value = row[4]?.ToString() ?? "";
+                    string col6Value = row[5]?.ToString() ?? "";
+
+                    // Check if this row matches the current group (check both columns 5 and 6)
+                    if (col5Value.Contains(group.ContainsText) || col6Value.Contains(group.ContainsText))
+                    {
+                        matchingRows.Add(row);
+                        assignedRows.Add(row); // Mark as assigned
+                    }
                 }
-                else if (col5Value.Contains("F11-X"))
+
+                if (matchingRows.Count > 0)
                 {
-                    var match = Regex.Match(col5Value, @"^(.*F11-X\d+)(?::|$)");
-                    string prefix = match.Success ? match.Groups[1].Value : col5Value;
-                    f11Rows.Add((prefix, _dataTable.Rows[i]));
-                }
-                else
-                {
-                    otherRows.Add(_dataTable.Rows[i]);
+                    // Sort within group
+                    matchingRows.Sort((a, b) =>
+                    {
+                        string aValue = a[4]?.ToString() ?? "";
+                        string bValue = b[4]?.ToString() ?? "";
+                        return string.Compare(aValue, bValue, StringComparison.Ordinal);
+                    });
+
+                    groupedRows.Add((group, matchingRows));
                 }
             }
 
-            x1Rows.Sort((a, b) => string.Compare(a.Prefix, b.Prefix, StringComparison.Ordinal));
-            f11Rows.Sort((a, b) =>
+            // Collect ungrouped rows (rows that don't match any group definition)
+            foreach (DataRow row in _dataTable.Rows)
             {
-                int prefixCompare = string.Compare(a.Prefix, b.Prefix, StringComparison.Ordinal);
-                if (prefixCompare != 0) return prefixCompare;
-                return string.Compare(a.Row[4]?.ToString(), b.Row[4]?.ToString(), StringComparison.Ordinal);
-            });
+                if (!assignedRows.Contains(row))
+                {
+                    ungroupedRows.Add(row);
+                }
+            }
 
+            // Create new sorted table
             DataTable sortedTable = _dataTable.Clone();
-            int groupNumber = 0;
 
-            string lastX1Prefix = null;
-            foreach (var x1Row in x1Rows)
+            // Add grouped rows with sequential color indices (0, 1, 0, 1, ...)
+            int colorIndex = 0;
+            foreach (var (group, rows) in groupedRows)
             {
-                if (x1Row.Prefix != lastX1Prefix)
+                foreach (var row in rows)
                 {
-                    lastX1Prefix = x1Row.Prefix;
-                    groupNumber++;
+                    var newRow = sortedTable.NewRow();
+                    newRow.ItemArray = row.ItemArray;
+
+                    // Set color index for alternating colors
+                    if (sortedTable.Columns.Count > 6)
+                    {
+                        newRow[6] = colorIndex.ToString();
+                    }
+                    else if (sortedTable.Columns.Count == 6)
+                    {
+                        sortedTable.Columns.Add("Group", typeof(string));
+                        newRow[6] = colorIndex.ToString();
+                    }
+
+                    sortedTable.Rows.Add(newRow);
                 }
-                var row = sortedTable.NewRow();
-                row.ItemArray = x1Row.Row.ItemArray;
-                if (sortedTable.Columns.Count > 6)
-                {
-                    row[6] = groupNumber.ToString();
-                }
-                sortedTable.Rows.Add(row);
+                colorIndex = (colorIndex + 1) % 2; // Alternate between 0 and 1
             }
 
-            string lastF11Prefix = null;
-            foreach (var f11Row in f11Rows)
+            // Add ungrouped rows at the end
+            foreach (var row in ungroupedRows)
             {
-                if (f11Row.Prefix != lastF11Prefix)
-                {
-                    lastF11Prefix = f11Row.Prefix;
-                    groupNumber++;
-                }
-                var row = sortedTable.NewRow();
-                row.ItemArray = f11Row.Row.ItemArray;
+                var newRow = sortedTable.NewRow();
+                newRow.ItemArray = row.ItemArray;
+
                 if (sortedTable.Columns.Count > 6)
                 {
-                    row[6] = groupNumber.ToString();
+                    newRow[6] = ""; // No group
                 }
-                sortedTable.Rows.Add(row);
-            }
 
-            foreach (var otherRow in otherRows)
-            {
-                sortedTable.Rows.Add(otherRow.ItemArray);
+                sortedTable.Rows.Add(newRow);
             }
 
             _dataTable = sortedTable;
             MoveCellsUpward();
-            UpdateGrid("Status: Data sorted with X1: and F11-X cells in column 5, group numbers assigned");
+
+            var activeGroups = groupedRows.Select(g => g.Group.GroupName).ToList();
+            string groupSummary = string.Join(", ", activeGroups);
+            UpdateGrid($"Status: Data sorted with custom groups: {groupSummary}");
         }
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
@@ -538,21 +642,15 @@ namespace FilterV1
                         worksheet.Cell(1, i + 1).Value = _dataTable.Columns[i].ColumnName;
                     }
 
-                    int lastGroupNumber = -1;
-                    bool useFirstColor = true;
-
                     for (int i = 0; i < _dataTable.Rows.Count; i++)
                     {
                         var row = worksheet.Row(i + 2);
-                        string groupNumberStr = _dataTable.Rows[i][6]?.ToString() ?? "";
-                        if (int.TryParse(groupNumberStr, out int currentGroupNumber))
+                        string colorIndexStr = _dataTable.Rows[i][6]?.ToString() ?? "";
+
+                        if (int.TryParse(colorIndexStr, out int colorIndex))
                         {
-                            if (currentGroupNumber != lastGroupNumber)
-                            {
-                                lastGroupNumber = currentGroupNumber;
-                                useFirstColor = !useFirstColor;
-                            }
-                            XLColor rowColor = useFirstColor ? XLColor.LightGreen : XLColor.LightBlue;
+                            // Alternate colors: 0 = green, 1 = pink
+                            XLColor rowColor = colorIndex == 0 ? XLColor.LightGreen : XLColor.LightPink;
                             for (int j = 1; j <= _dataTable.Columns.Count; j++)
                             {
                                 row.Cell(j).Style.Fill.BackgroundColor = rowColor;
@@ -580,9 +678,10 @@ namespace FilterV1
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            if (value is string groupNumberStr && int.TryParse(groupNumberStr, out int groupNumber))
+            if (value is string colorIndexStr && int.TryParse(colorIndexStr, out int colorIndex))
             {
-                return groupNumber % 2 == 1 ? Brushes.LightGreen : Brushes.LightBlue;
+                // Alternate colors: 0 = green, 1 = pink
+                return colorIndex == 0 ? Brushes.LightGreen : Brushes.LightPink;
             }
             return Brushes.Transparent;
         }
