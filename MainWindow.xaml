@@ -23,15 +23,15 @@
 
         <!-- Control Buttons -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
-            <Button x:Name="RemoveEqualsButton" Click="RemoveEqualsButton_Click" Content="Remove =" Width="100" Margin="5"/>
-            <Button x:Name="RemoveLVButton" Click="RemoveLVButton_Click" Content="Remove +LV" Width="100" Margin="5"/>
-            <Button x:Name="RemoveXSButton" Click="RemoveXSButton_Click" Content="Remove XS" Width="100" Margin="5"/>
-            <Button x:Name="RemoveMXButton" Click="RemoveMXButton_Click" Content="Remove MX" Width="100" Margin="5"/>
-            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" Content="Remove Rising Numbers" Width="150" Margin="5"/>
-            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" Content="Remove Cells" Width="120" Margin="5"/>
-            <Button x:Name="AddTextButton" Click="AddTextButton_Click" Content="Add Text" Width="120" Margin="5"/>
-            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" Content="Remove Dupes" Width="100" Margin="5"/>
-            <Button x:Name="SortButton" Click="SortButton_Click" Content="Sort" Width="100" Margin="5"/>
+            <Button x:Name="RemoveEqualsButton" Click="RemoveEqualsButton_Click" Content="1. Remove =" Width="100" Margin="5"/>
+            <Button x:Name="RemoveLVButton" Click="RemoveLVButton_Click" Content="2. Remove +LV" Width="100" Margin="5"/>
+            <Button x:Name="RemoveMXButton" Click="RemoveMXButton_Click" Content="3. Remove MX" Width="100" Margin="5"/>
+            <Button x:Name="RemoveXSButton" Click="RemoveXSButton_Click" Content="4. Remove XS" Width="100" Margin="5"/>
+            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" Content="5. Remove Dupes" Width="100" Margin="5"/>
+            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" Content="6. Remove Rising Numbers" Width="150" Margin="5"/>
+            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" Content="7. Remove Cells" Width="120" Margin="5"/>
+            <Button x:Name="SortButton" Click="SortButton_Click" Content="8. Sort" Width="100" Margin="5"/>
+            <Button x:Name="WiringCrossSectionButton" Click="AddTextButton_Click" Content="9. Wiring Cross Section" Width="150" Margin="5"/>
             <Button x:Name="UndoButton" Click="UndoButton_Click" Content="Undo" Width="100" Margin="5"/>
             <Button x:Name="SaveButton" Click="SaveButton_Click" Content="Save" Width="100" Margin="5"/>
         </StackPanel>

@@ -201,27 +201,27 @@ namespace FilterV1
             }
 
             SaveState();
-            int initialRowCount = _dataTable.Rows.Count;
-            for (int i = _dataTable.Rows.Count - 1; i >= 0; i--)
+            foreach (DataRow row in _dataTable.Rows)
             {
-                DataRow row = _dataTable.Rows[i];
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
                 {
                     string cellValue = row[j]?.ToString();
                     if (!string.IsNullOrEmpty(cellValue) && cellValue.Contains("XS"))
                     {
-                        _dataTable.Rows.RemoveAt(i);
-                        if (i < _dataTable.Rows.Count)
+                        row[j] = string.Empty;
+                        if (j > 0)
                         {
-                            _dataTable.Rows.RemoveAt(i);
+                            row[j - 1] = string.Empty;
                         }
-                        break;
+                        if (j < _dataTable.Columns.Count - 1)
+                        {
+                            row[j + 1] = string.Empty;
+                        }
                     }
                 }
             }
-            _rowsRemoved += initialRowCount - _dataTable.Rows.Count;
             MoveCellsUpward();
-            UpdateGrid("Status: Rows containing 'XS' and adjacent rows removed");
+            UpdateGrid("Status: Cells containing 'XS' and adjacent cells cleared");
         }
 
         private void RemoveMXButton_Click(object sender, RoutedEventArgs e)
