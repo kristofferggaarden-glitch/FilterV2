@@ -17,25 +17,46 @@ namespace FilterV1
             InitializeComponent();
             _callback = callback;
 
-            // Create a deep copy of existing patterns
+            // Create a deep copy of existing patterns and ensure they have priorities
             _textFillPatterns = existingPatterns.Select(p => new TextFillPattern
             {
                 ContainsText = p.ContainsText,
-                SelectedOption = p.SelectedOption
+                SelectedOption = p.SelectedOption,
+                Priority = p.Priority
             }).ToList();
+
+            // Fix any patterns that don't have priorities assigned
+            EnsurePrioritiesAreSet();
 
             OptionComboBox.SelectionChanged += OptionComboBox_SelectionChanged;
             RefreshPatternsList();
             UpdatePreview();
         }
 
+        private void EnsurePrioritiesAreSet()
+        {
+            // Check if any patterns have priority 0 (unset) and assign them proper priorities
+            var patternsWithoutPriority = _textFillPatterns.Where(p => p.Priority == 0).ToList();
+
+            if (patternsWithoutPriority.Any())
+            {
+                int maxPriority = _textFillPatterns.Where(p => p.Priority > 0).Any() ?
+                    _textFillPatterns.Where(p => p.Priority > 0).Max(p => p.Priority) : 0;
+
+                foreach (var pattern in patternsWithoutPriority)
+                {
+                    pattern.Priority = ++maxPriority;
+                }
+            }
+        }
+
         private void RefreshPatternsList()
         {
             PatternsListBox.Items.Clear();
-            foreach (var pattern in _textFillPatterns)
+            foreach (var pattern in _textFillPatterns.OrderBy(p => p.Priority))
             {
                 string optionText = GetOptionDescription(pattern.SelectedOption);
-                PatternsListBox.Items.Add($"Text: '{pattern.ContainsText}' → {optionText}");
+                PatternsListBox.Items.Add($"Priority {pattern.Priority}: '{pattern.ContainsText}' → {optionText}");
             }
         }
 
@@ -112,10 +133,13 @@ namespace FilterV1
             var selectedItem = OptionComboBox.SelectedItem as ComboBoxItem;
             int selectedOption = selectedItem != null ? int.Parse(selectedItem.Tag.ToString()) : 1;
 
+            int priority = _textFillPatterns.Count > 0 ? _textFillPatterns.Max(p => p.Priority) + 1 : 1;
+
             _textFillPatterns.Add(new TextFillPattern
             {
                 ContainsText = containsText,
-                SelectedOption = selectedOption
+                SelectedOption = selectedOption,
+                Priority = priority
             });
 
             ContainsTextTextBox.Clear();
@@ -123,18 +147,55 @@ namespace FilterV1
             RefreshPatternsList();
         }
 
+        private void MoveUpButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PatternsListBox.SelectedIndex > 0)
+            {
+                int selectedIndex = PatternsListBox.SelectedIndex;
+                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+                var selectedPattern = orderedPatterns[selectedIndex];
+                var previousPattern = orderedPatterns[selectedIndex - 1];
+
+                int tempPriority = selectedPattern.Priority;
+                selectedPattern.Priority = previousPattern.Priority;
+                previousPattern.Priority = tempPriority;
+
+                RefreshPatternsList();
+                PatternsListBox.SelectedIndex = selectedIndex - 1;
+            }
+        }
+
+        private void MoveDownButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PatternsListBox.SelectedIndex >= 0 && PatternsListBox.SelectedIndex < PatternsListBox.Items.Count - 1)
+            {
+                int selectedIndex = PatternsListBox.SelectedIndex;
+                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+                var selectedPattern = orderedPatterns[selectedIndex];
+                var nextPattern = orderedPatterns[selectedIndex + 1];
+
+                int tempPriority = selectedPattern.Priority;
+                selectedPattern.Priority = nextPattern.Priority;
+                nextPattern.Priority = tempPriority;
+
+                RefreshPatternsList();
+                PatternsListBox.SelectedIndex = selectedIndex + 1;
+            }
+        }
+
         private void EditPatternButton_Click(object sender, RoutedEventArgs e)
         {
             if (PatternsListBox.SelectedIndex >= 0)
             {
-                var selectedPattern = _textFillPatterns[PatternsListBox.SelectedIndex];
+                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+                var selectedPattern = orderedPatterns[PatternsListBox.SelectedIndex];
 
                 // Load the selected pattern into the input fields
                 ContainsTextTextBox.Text = selectedPattern.ContainsText;
                 OptionComboBox.SelectedIndex = selectedPattern.SelectedOption - 1; // Convert to 0-based index
 
                 // Remove the old pattern (it will be re-added when user clicks Add)
-                _textFillPatterns.RemoveAt(PatternsListBox.SelectedIndex);
+                _textFillPatterns.Remove(selectedPattern);
                 RefreshPatternsList();
 
                 ContainsTextTextBox.Focus();
@@ -150,7 +211,9 @@ namespace FilterV1
         {
             if (PatternsListBox.SelectedIndex >= 0)
             {
-                _textFillPatterns.RemoveAt(PatternsListBox.SelectedIndex);
+                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+                var selectedPattern = orderedPatterns[PatternsListBox.SelectedIndex];
+                _textFillPatterns.Remove(selectedPattern);
                 RefreshPatternsList();
             }
             else
@@ -183,5 +246,6 @@ namespace FilterV1
     {
         public string ContainsText { get; set; }
         public int SelectedOption { get; set; } // 1, 2, 3, or 4
+        public int Priority { get; set; }
     }
 }

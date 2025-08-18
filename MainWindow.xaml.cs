@@ -434,44 +434,6 @@ namespace FilterV1
             window.Show();
         }
 
-        private void AddTextButton_Click(object sender, RoutedEventArgs e)
-        {
-            var window = new AddTextWindow(pairs =>
-            {
-                if (_dataTable == null)
-                {
-                    UpdateGrid("Status: No file loaded, pairs defined but not applied");
-                    return;
-                }
-
-                SaveState();
-                var modifiedRows = new List<int>();
-                foreach (DataRow row in _dataTable.Rows)
-                {
-                    string col5Value = row[4]?.ToString()?.Trim();
-                    string col6Value = row[5]?.ToString()?.Trim();
-                    if (string.IsNullOrEmpty(col5Value) || string.IsNullOrEmpty(col6Value))
-                        continue;
-
-                    foreach (var pair in pairs)
-                    {
-                        if (string.Equals(col5Value, pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(col6Value, pair.SecondCell, StringComparison.OrdinalIgnoreCase))
-                        {
-                            int rowIndex = _dataTable.Rows.IndexOf(row) + 1;
-                            row[1] = pair.Ledningstype ?? "";
-                            row[2] = pair.HylseSide1 ?? "";
-                            row[3] = pair.HylseSide2 ?? "";
-                            modifiedRows.Add(rowIndex);
-                            break;
-                        }
-                    }
-                }
-                UpdateGrid($"Status: Added text to columns 2-4 in rows: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
-            });
-            window.Show();
-        }
-
         private void RemoveDupesButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -548,8 +510,8 @@ namespace FilterV1
                 string col5Value = row[4]?.ToString()?.Trim() ?? "";
                 string col6Value = row[5]?.ToString()?.Trim() ?? "";
 
-                // Check both columns 5 and 6 for matching patterns
-                foreach (var pattern in _textFillPatterns)
+                // Check both columns 5 and 6 for matching patterns in priority order
+                foreach (var pattern in _textFillPatterns.OrderBy(p => p.Priority))
                 {
                     if (col5Value.Contains(pattern.ContainsText) || col6Value.Contains(pattern.ContainsText))
                     {
@@ -561,7 +523,7 @@ namespace FilterV1
                         row[3] = col4; // Column 4
 
                         modifiedRows.Add(rowIndex);
-                        break; // Only apply the first matching pattern
+                        break; // Only apply the first matching pattern (highest priority)
                     }
                 }
             }

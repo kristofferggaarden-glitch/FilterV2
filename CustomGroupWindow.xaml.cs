@@ -99,16 +99,17 @@ namespace FilterV1
         {
             if (GroupsListBox.SelectedIndex > 0)
             {
+                int selectedIndex = GroupsListBox.SelectedIndex;
                 var orderedGroups = _groupDefinitions.OrderBy(g => g.Priority).ToList();
-                var selectedGroup = orderedGroups[GroupsListBox.SelectedIndex];
-                var previousGroup = orderedGroups[GroupsListBox.SelectedIndex - 1];
+                var selectedGroup = orderedGroups[selectedIndex];
+                var previousGroup = orderedGroups[selectedIndex - 1];
 
                 int tempPriority = selectedGroup.Priority;
                 selectedGroup.Priority = previousGroup.Priority;
                 previousGroup.Priority = tempPriority;
 
                 RefreshGroupList();
-                GroupsListBox.SelectedIndex = GroupsListBox.SelectedIndex - 1;
+                GroupsListBox.SelectedIndex = selectedIndex - 1;
             }
         }
 
@@ -116,16 +117,17 @@ namespace FilterV1
         {
             if (GroupsListBox.SelectedIndex >= 0 && GroupsListBox.SelectedIndex < GroupsListBox.Items.Count - 1)
             {
+                int selectedIndex = GroupsListBox.SelectedIndex;
                 var orderedGroups = _groupDefinitions.OrderBy(g => g.Priority).ToList();
-                var selectedGroup = orderedGroups[GroupsListBox.SelectedIndex];
-                var nextGroup = orderedGroups[GroupsListBox.SelectedIndex + 1];
+                var selectedGroup = orderedGroups[selectedIndex];
+                var nextGroup = orderedGroups[selectedIndex + 1];
 
                 int tempPriority = selectedGroup.Priority;
                 selectedGroup.Priority = nextGroup.Priority;
                 nextGroup.Priority = tempPriority;
 
                 RefreshGroupList();
-                GroupsListBox.SelectedIndex = GroupsListBox.SelectedIndex + 1;
+                GroupsListBox.SelectedIndex = selectedIndex + 1;
             }
         }
 

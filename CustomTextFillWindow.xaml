@@ -16,6 +16,7 @@
         <!-- Instructions -->
         <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontWeight="Bold">
             Define text patterns and select what to fill in columns 2, 3, and 4 when that text is found.
+            Patterns are processed in priority order (1 = highest priority).
         </TextBlock>
 
         <!-- Add Text Pattern Section -->
@@ -61,6 +62,10 @@
             <ListBox x:Name="PatternsListBox" Grid.Column="0" Margin="0,0,10,0"/>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
+                        Width="100" Margin="0,0,0,5" ToolTip="Increase priority (move up in processing order)"/>
+                <Button x:Name="MoveDownButton" Content="Move Down" Click="MoveDownButton_Click" 
+                        Width="100" Margin="0,0,0,5" ToolTip="Decrease priority (move down in processing order)"/>
                 <Button x:Name="EditPatternButton" Content="Edit Selected" Click="EditPatternButton_Click" 
                         Width="100" Margin="0,0,0,5" ToolTip="Edit the selected pattern"/>
                 <Button x:Name="RemovePatternButton" Content="Remove" Click="RemovePatternButton_Click" 
