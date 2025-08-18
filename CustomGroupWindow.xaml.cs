@@ -32,23 +32,41 @@ namespace FilterV1
             GroupsListBox.Items.Clear();
             foreach (var group in _groupDefinitions.OrderBy(g => g.Priority))
             {
-                GroupsListBox.Items.Add($"Priority {group.Priority}: {group.GroupName} (Contains: '{group.ContainsText}')");
+                GroupsListBox.Items.Add($"Priority {group.Priority}: Contains '{group.ContainsText}'");
+            }
+        }
+
+        private void ContainsTextTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                AddGroupButton_Click(sender, e);
             }
         }
 
         private void AddGroupButton_Click(object sender, RoutedEventArgs e)
         {
-            string groupName = GroupNameTextBox.Text.Trim();
             string containsText = ContainsTextTextBox.Text.Trim();
 
-            if (string.IsNullOrEmpty(groupName) || string.IsNullOrEmpty(containsText))
+            if (string.IsNullOrEmpty(containsText))
             {
-                MessageBox.Show("Please enter both Group Name and Contains Text.", "Validation Error",
+                MessageBox.Show("Please enter the text pattern to match.", "Validation Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Check for duplicates
+            if (_groupDefinitions.Any(g => g.ContainsText.Equals(containsText, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("A group with this text pattern already exists.", "Duplicate Entry",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             int priority = _groupDefinitions.Count > 0 ? _groupDefinitions.Max(g => g.Priority) + 1 : 1;
+
+            // Auto-generate group name based on contains text
+            string groupName = $"Group {containsText}";
 
             _groupDefinitions.Add(new GroupDefinition
             {
@@ -57,8 +75,8 @@ namespace FilterV1
                 Priority = priority
             });
 
-            GroupNameTextBox.Clear();
             ContainsTextTextBox.Clear();
+            ContainsTextTextBox.Focus(); // Keep focus for easy multiple entries
             RefreshGroupList();
         }
 

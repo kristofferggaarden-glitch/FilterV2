@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.CustomGroupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Custom Group Settings" Height="500" Width="600"
+        Title="Custom Group Settings" Height="450" Width="500"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -14,7 +14,7 @@
 
         <!-- Instructions -->
         <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontWeight="Bold">
-            Define custom groups for sorting. Rows containing the specified text in column 5 will be grouped together.
+            Define text patterns for grouping. Rows containing the specified text in columns 5 or 6 will be grouped together.
             Groups are processed in priority order (1 = highest priority).
         </TextBlock>
 
@@ -24,24 +24,15 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Group Name:" VerticalAlignment="Center" Margin="0,0,10,5"/>
-            <TextBox x:Name="GroupNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,10,5" 
-                     ToolTip="Enter a descriptive name for this group"/>
+            <TextBlock Grid.Column="0" Text="Contains Text:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBox x:Name="ContainsTextTextBox" Grid.Column="1" Margin="0,0,10,0"
+                     ToolTip="Text that must be contained in column 5 or 6 for grouping"
+                     KeyDown="ContainsTextTextBox_KeyDown"/>
 
-            <TextBlock Grid.Row="0" Grid.Column="2" Text="Contains Text:" VerticalAlignment="Center" Margin="0,0,10,5"/>
-            <TextBox x:Name="ContainsTextTextBox" Grid.Row="0" Grid.Column="3" Margin="0,0,10,5"
-                     ToolTip="Text that must be contained in column 5 for grouping"/>
-
-            <Button x:Name="AddGroupButton" Grid.Row="0" Grid.Column="4" Content="Add Group" 
-                    Click="AddGroupButton_Click" Width="80" Margin="0,0,0,5"/>
+            <Button x:Name="AddGroupButton" Grid.Column="2" Content="Add Group" 
+                    Click="AddGroupButton_Click" Width="80"/>
         </Grid>
 
         <!-- Groups List -->
@@ -65,14 +56,13 @@
 
         <!-- Instructions for existing groups -->
         <TextBlock Grid.Row="3" TextWrapping="Wrap" Margin="0,15,0,10" FontStyle="Italic" FontSize="11">
-            Default groups: X1 Group (contains "X1:") and F11 Group (contains "F11-X"). 
-            You can modify or remove these and add your own custom groups.
+            Priority text will always be moved to column 5 (left side). Press Enter in the text box to quickly add groups.
         </TextBlock>
 
         <!-- Action Buttons -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button x:Name="ApplyGroupsButton" Content="Apply Groups &amp; Sort" Click="ApplyGroupsButton_Click" 
-                    Width="120" Margin="0,0,10,0" IsDefault="True"/>
+                    Width="120" Margin="0,0,10,0"/>
             <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
                     Width="80" IsCancel="True"/>
         </StackPanel>

@@ -23,7 +23,9 @@ namespace FilterV1
         private bool _removeEqualsApplied;
         private bool _removeLVApplied;
         private List<GroupDefinition> _customGroups;
+        private List<TextFillPattern> _textFillPatterns;
         private readonly string _settingsFilePath;
+        private readonly string _textFillSettingsFilePath;
 
         public MainWindow()
         {
@@ -33,14 +35,16 @@ namespace FilterV1
             _removeEqualsApplied = false;
             _removeLVApplied = false;
 
-            // Set up settings file path
+            // Set up settings file paths
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appDataPath, "FilterV1");
             Directory.CreateDirectory(appFolder);
             _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
+            _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
 
-            // Load custom groups from settings or use defaults
+            // Load custom groups and text fill patterns from settings or use defaults
             LoadCustomGroups();
+            LoadTextFillPatterns();
         }
 
         private void LoadCustomGroups()
@@ -75,6 +79,42 @@ namespace FilterV1
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save group settings: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void LoadTextFillPatterns()
+        {
+            try
+            {
+                if (File.Exists(_textFillSettingsFilePath))
+                {
+                    string json = File.ReadAllText(_textFillSettingsFilePath);
+                    _textFillPatterns = JsonSerializer.Deserialize<List<TextFillPattern>>(json) ?? new List<TextFillPattern>();
+                }
+                else
+                {
+                    _textFillPatterns = new List<TextFillPattern>();
+                    SaveTextFillPatterns();
+                }
+            }
+            catch (Exception)
+            {
+                _textFillPatterns = new List<TextFillPattern>();
+            }
+        }
+
+        private void SaveTextFillPatterns()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_textFillPatterns, options);
+                File.WriteAllText(_textFillSettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save text fill settings: {ex.Message}", "Save Error",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
@@ -391,7 +431,7 @@ namespace FilterV1
                     UpdateGrid("Status: No file loaded, pairs defined but not applied");
                 }
             });
-            window.Show(); // Changed to non-modal
+            window.Show();
         }
 
         private void AddTextButton_Click(object sender, RoutedEventArgs e)
@@ -429,7 +469,7 @@ namespace FilterV1
                 }
                 UpdateGrid($"Status: Added text to columns 2-4 in rows: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
             });
-            window.Show(); // Changed to non-modal
+            window.Show();
         }
 
         private void RemoveDupesButton_Click(object sender, RoutedEventArgs e)
@@ -477,13 +517,77 @@ namespace FilterV1
             window.ShowDialog();
         }
 
+        private void CustomTextFillButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Status: No file loaded";
+                return;
+            }
+
+            // Open the custom text fill window with current patterns
+            var window = new CustomTextFillWindow(_textFillPatterns, patterns =>
+            {
+                _textFillPatterns = patterns;
+                SaveTextFillPatterns(); // Save to persistent storage
+                ApplyTextFillPatterns();
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
+        private void ApplyTextFillPatterns()
+        {
+            if (_dataTable == null) return;
+
+            SaveState();
+            var modifiedRows = new List<int>();
+
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                string col5Value = row[4]?.ToString()?.Trim() ?? "";
+                string col6Value = row[5]?.ToString()?.Trim() ?? "";
+
+                // Check both columns 5 and 6 for matching patterns
+                foreach (var pattern in _textFillPatterns)
+                {
+                    if (col5Value.Contains(pattern.ContainsText) || col6Value.Contains(pattern.ContainsText))
+                    {
+                        int rowIndex = _dataTable.Rows.IndexOf(row) + 1;
+                        var (col2, col3, col4) = GetOptionValues(pattern.SelectedOption);
+
+                        row[1] = col2; // Column 2
+                        row[2] = col3; // Column 3
+                        row[3] = col4; // Column 4
+
+                        modifiedRows.Add(rowIndex);
+                        break; // Only apply the first matching pattern
+                    }
+                }
+            }
+
+            UpdateGrid($"Status: Applied text fill to columns 2-4 in rows: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
+        }
+
+        private (string col2, string col3, string col4) GetOptionValues(int option)
+        {
+            switch (option)
+            {
+                case 1: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
+                case 2: return ("UNIBK1.5", "HYLSE 1.5", "HYLSE 1.5");
+                case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
+                case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
+                default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
+            }
+        }
+
         private void ApplyCustomSort()
         {
             if (_dataTable == null) return;
 
             SaveState();
 
-            // Swap columns 5 and 6 if column 6 contains target text and column 5 doesn't
+            // IMPORTANT: Ensure higher priority text is always on the left (column 5)
             if (_dataTable.Columns.Count >= 6)
             {
                 for (int i = 0; i < _dataTable.Rows.Count; i++)
@@ -491,13 +595,29 @@ namespace FilterV1
                     string col5Value = _dataTable.Rows[i][4]?.ToString() ?? "";
                     string col6Value = _dataTable.Rows[i][5]?.ToString() ?? "";
 
-                    bool col5HasTarget = _customGroups.Any(g => col5Value.Contains(g.ContainsText) || col6Value.Contains(g.ContainsText));
-                    bool col6HasTarget = _customGroups.Any(g => col6Value.Contains(g.ContainsText) || col5Value.Contains(g.ContainsText));
+                    // Find the priority of each column's text (lower number = higher priority)
+                    int col5Priority = GetTextPriority(col5Value);
+                    int col6Priority = GetTextPriority(col6Value);
 
-                    if (col6HasTarget && !col5HasTarget)
+                    // If column 6 has higher priority text (lower number) than column 5, swap them
+                    // OR if column 6 has priority text and column 5 doesn't have any priority text
+                    bool shouldSwap = false;
+
+                    if (col6Priority > 0 && col5Priority == 0)
                     {
-                        _dataTable.Rows[i][4] = col6Value;
-                        _dataTable.Rows[i][5] = col5Value;
+                        // Column 6 has priority text, column 5 doesn't
+                        shouldSwap = true;
+                    }
+                    else if (col6Priority > 0 && col5Priority > 0 && col6Priority < col5Priority)
+                    {
+                        // Both have priority text, but column 6 has higher priority (lower number)
+                        shouldSwap = true;
+                    }
+
+                    if (shouldSwap)
+                    {
+                        _dataTable.Rows[i][4] = col6Value;  // Move higher priority text to column 5
+                        _dataTable.Rows[i][5] = col5Value;  // Move lower priority text to column 6
                     }
                 }
             }
@@ -603,9 +723,24 @@ namespace FilterV1
             _dataTable = sortedTable;
             MoveCellsUpward();
 
-            var activeGroups = groupedRows.Select(g => g.Group.GroupName).ToList();
+            var activeGroups = groupedRows.Select(g => g.Group.ContainsText).ToList();
             string groupSummary = string.Join(", ", activeGroups);
-            UpdateGrid($"Status: Data sorted with custom groups: {groupSummary}");
+            UpdateGrid($"Status: Data sorted with priority text moved to left. Groups: {groupSummary}");
+        }
+
+        // Helper method to get the priority of text (returns 0 if no priority text found)
+        private int GetTextPriority(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return 0;
+
+            foreach (var group in _customGroups)
+            {
+                if (text.Contains(group.ContainsText))
+                {
+                    return group.Priority;
+                }
+            }
+            return 0; // No priority text found
         }
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)

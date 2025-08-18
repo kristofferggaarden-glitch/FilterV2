@@ -1,0 +1,103 @@
+﻿<Window x:Class="FilterV1.CustomTextFillWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Custom Text Fill Settings" Height="500" Width="600"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Instructions -->
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontWeight="Bold">
+            Define text patterns and select what to fill in columns 2, 3, and 4 when that text is found.
+        </TextBlock>
+
+        <!-- Add Text Pattern Section -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Contains Text:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBox x:Name="ContainsTextTextBox" Grid.Column="1" Margin="0,0,10,0"
+                     ToolTip="Text pattern to search for (e.g., F3)"
+                     KeyDown="ContainsTextTextBox_KeyDown"/>
+
+            <Button x:Name="AddPatternButton" Grid.Column="2" Content="Add Pattern" 
+                    Click="AddPatternButton_Click" Width="90"/>
+        </Grid>
+
+        <!-- Options Section -->
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Fill Option:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <ComboBox x:Name="OptionComboBox" Grid.Column="1" SelectedIndex="0">
+                <ComboBoxItem Content="Option 1: UNIBK1.0, HYLSE 1.0, HYLSE 1.0" Tag="1"/>
+                <ComboBoxItem Content="Option 2: UNIBK1.5, HYLSE 1.5, HYLSE 1.5" Tag="2"/>
+                <ComboBoxItem Content="Option 3: UNIBK2.5, HYLSE 2.5, HYLSE 2.5" Tag="3"/>
+                <ComboBoxItem Content="Option 4: UNIBK4.0, HYLSE 4.0, HYLSE 4.0" Tag="4"/>
+            </ComboBox>
+        </Grid>
+
+        <!-- Pattern List -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="PatternsListBox" Grid.Column="0" Margin="0,0,10,0"/>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                <Button x:Name="EditPatternButton" Content="Edit Selected" Click="EditPatternButton_Click" 
+                        Width="100" Margin="0,0,0,5" ToolTip="Edit the selected pattern"/>
+                <Button x:Name="RemovePatternButton" Content="Remove" Click="RemovePatternButton_Click" 
+                        Width="100" Margin="0,0,0,5" ToolTip="Remove selected pattern"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Preview Section -->
+        <Grid Grid.Row="4" Margin="0,15,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Preview:" FontWeight="Bold" Margin="0,0,10,5"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Column 2" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="Column 3" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Row="0" Grid.Column="3" Text="Column 4" FontWeight="Bold" HorizontalAlignment="Center"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Selected Option:" Margin="0,0,10,0"/>
+            <TextBox x:Name="PreviewCol2" Grid.Row="1" Grid.Column="1" IsReadOnly="True" Margin="2"/>
+            <TextBox x:Name="PreviewCol3" Grid.Row="1" Grid.Column="2" IsReadOnly="True" Margin="2"/>
+            <TextBox x:Name="PreviewCol4" Grid.Row="1" Grid.Column="3" IsReadOnly="True" Margin="2"/>
+        </Grid>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="ApplyFillButton" Content="Apply Text Fill" Click="ApplyFillButton_Click" 
+                    Width="120" Margin="0,0,10,0"/>
+            <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
+                    Width="80" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
