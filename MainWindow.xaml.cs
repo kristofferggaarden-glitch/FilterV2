@@ -462,8 +462,10 @@ namespace FilterV1
 
                         foreach (var pair in pairs)
                         {
-                            if (string.Equals(col5Value, pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
-                                string.Equals(col6Value, pair.SecondCell, StringComparison.OrdinalIgnoreCase))
+                            // FIXED: Use Contains instead of exact match
+                            if (!string.IsNullOrEmpty(pair.FirstCell) && !string.IsNullOrEmpty(pair.SecondCell) &&
+                                col5Value.Contains(pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
+                                col6Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase))
                             {
                                 matchedRows.Add(i + 1);
                                 _dataTable.Rows.RemoveAt(i);
@@ -472,7 +474,7 @@ namespace FilterV1
                         }
                     }
                     MoveCellsUpward();
-                    UpdateGrid($"Status: Removed rows with matching cells in columns 5-6: {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
+                    UpdateGrid($"Status: Removed rows with cells containing patterns in columns 5-6: {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
                 }
                 else
                 {

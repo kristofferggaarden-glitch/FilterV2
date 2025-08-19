@@ -24,7 +24,21 @@ namespace FilterV1
                 Priority = g.Priority
             }).ToList();
 
+            // Enable multi-selection for the ListBox
+            GroupsListBox.SelectionMode = SelectionMode.Extended;
+
+            // Add keyboard support for Delete key
+            GroupsListBox.KeyDown += GroupsListBox_KeyDown;
+
             RefreshGroupList();
+        }
+
+        private void GroupsListBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Delete)
+            {
+                RemoveGroupButton_Click(sender, new RoutedEventArgs());
+            }
         }
 
         private void RefreshGroupList()
@@ -55,29 +69,62 @@ namespace FilterV1
                 return;
             }
 
-            // Check for duplicates
-            if (_groupDefinitions.Any(g => g.ContainsText.Equals(containsText, StringComparison.OrdinalIgnoreCase)))
+            // Handle multi-line paste - split by newlines and process each line
+            string[] lines = containsText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int addedCount = 0;
+
+            foreach (string line in lines)
             {
-                MessageBox.Show("A group with this text pattern already exists.", "Duplicate Entry",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                string trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                // If line contains tabs (Excel multi-column paste), take only the first column
+                if (trimmedLine.Contains('\t'))
+                {
+                    string[] parts = trimmedLine.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 0)
+                    {
+                        trimmedLine = parts[0].Trim();
+                    }
+                }
+
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                // Check for duplicates
+                if (_groupDefinitions.Any(g => g.ContainsText.Equals(trimmedLine, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue; // Skip duplicates
+                }
+
+                int priority = _groupDefinitions.Count > 0 ? _groupDefinitions.Max(g => g.Priority) + 1 : 1;
+
+                // Auto-generate group name based on contains text
+                string groupName = $"Group {trimmedLine}";
+
+                _groupDefinitions.Add(new GroupDefinition
+                {
+                    GroupName = groupName,
+                    ContainsText = trimmedLine,
+                    Priority = priority
+                });
+
+                addedCount++;
             }
-
-            int priority = _groupDefinitions.Count > 0 ? _groupDefinitions.Max(g => g.Priority) + 1 : 1;
-
-            // Auto-generate group name based on contains text
-            string groupName = $"Group {containsText}";
-
-            _groupDefinitions.Add(new GroupDefinition
-            {
-                GroupName = groupName,
-                ContainsText = containsText,
-                Priority = priority
-            });
 
             ContainsTextTextBox.Clear();
             ContainsTextTextBox.Focus(); // Keep focus for easy multiple entries
             RefreshGroupList();
+
+            if (addedCount > 1)
+            {
+                MessageBox.Show($"Added {addedCount} groups successfully.", "Multiple Groups Added",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else if (addedCount == 0)
+            {
+                MessageBox.Show("No new groups were added. Check for duplicates or empty text.", "No Groups Added",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void RemoveGroupButton_Click(object sender, RoutedEventArgs e)

@@ -13,8 +13,8 @@ namespace FilterV1
     {
         public class CellPair
         {
-            public string FirstCell { get; set; }
-            public string SecondCell { get; set; }
+            public string FirstCell { get; set; } = "";
+            public string SecondCell { get; set; } = "";
         }
 
         private readonly Action<List<CellPair>> _onApply;
@@ -41,7 +41,11 @@ namespace FilterV1
                     var loadedPairs = JsonSerializer.Deserialize<List<CellPair>>(json);
                     if (loadedPairs != null)
                     {
-                        _cellPairs.AddRange(loadedPairs.Distinct(new CellPairComparer()));
+                        // Filter out null or empty pairs and remove duplicates
+                        var validPairs = loadedPairs
+                            .Where(p => p != null && !string.IsNullOrWhiteSpace(p.FirstCell) && !string.IsNullOrWhiteSpace(p.SecondCell))
+                            .Distinct(new CellPairComparer());
+                        _cellPairs.AddRange(validPairs);
                     }
                 }
             }
@@ -71,39 +75,57 @@ namespace FilterV1
             string pastedText = PasteTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(pastedText) || pastedText == "Paste cell pairs here...")
             {
-                MessageBox.Show("Please paste valid cell pairs.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Please paste valid cell pairs or enter text patterns.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string[] parts = pastedText.Split('\t', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2)
+            // Handle multi-line paste - split by newlines and process each line
+            string[] lines = pastedText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int addedCount = 0;
+
+            foreach (string line in lines)
             {
-                string firstCell = parts[0].Trim();
-                string secondCell = parts[1].Trim();
-                if (!string.IsNullOrWhiteSpace(firstCell) && !string.IsNullOrWhiteSpace(secondCell))
+                string trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                // Split by tab (Excel paste) or space if no tab
+                string[] parts = trimmedLine.Contains('\t') ?
+                    trimmedLine.Split('\t', StringSplitOptions.RemoveEmptyEntries) :
+                    trimmedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length >= 2)
                 {
-                    var newPair = new CellPair { FirstCell = firstCell, SecondCell = secondCell };
-                    if (!_cellPairs.Any(p => new CellPairComparer().Equals(p, newPair)))
+                    string firstCell = parts[0].Trim();
+                    string secondCell = parts[1].Trim();
+
+                    if (!string.IsNullOrWhiteSpace(firstCell) && !string.IsNullOrWhiteSpace(secondCell))
                     {
-                        _cellPairs.Add(newPair);
-                        CellPairsGrid.Items.Refresh();
-                        PasteTextBox.Text = string.Empty;
-                        PasteTextBox.Focus();
-                        SaveCellPairs();
-                    }
-                    else
-                    {
-                        MessageBox.Show("This pair already exists.", "Duplicate Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        var newPair = new CellPair { FirstCell = firstCell, SecondCell = secondCell };
+                        if (!_cellPairs.Any(p => new CellPairComparer().Equals(p, newPair)))
+                        {
+                            _cellPairs.Add(newPair);
+                            addedCount++;
+                        }
                     }
                 }
-                else
+            }
+
+            if (addedCount > 0)
+            {
+                CellPairsGrid.Items.Refresh();
+                SaveCellPairs();
+                PasteTextBox.Text = string.Empty;
+                PasteTextBox.Focus();
+
+                if (addedCount > 1)
                 {
-                    MessageBox.Show("Both cell values must be non-empty.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"Added {addedCount} pattern pairs successfully.", "Multiple Pairs Added",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             else
             {
-                MessageBox.Show("Pasted text must contain two values separated by a tab.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("No valid pairs found or all pairs already exist.", "Input Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -125,11 +147,19 @@ namespace FilterV1
 
                 foreach (string line in lines)
                 {
-                    string[] parts = line.Split('\t', StringSplitOptions.RemoveEmptyEntries);
+                    string trimmedLine = line.Trim();
+                    if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                    // Split by tab (Excel paste) or space if no tab  
+                    string[] parts = trimmedLine.Contains('\t') ?
+                        trimmedLine.Split('\t', StringSplitOptions.RemoveEmptyEntries) :
+                        trimmedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
                     if (parts.Length >= 2)
                     {
                         string firstCell = parts[0].Trim();
                         string secondCell = parts[1].Trim();
+
                         if (!string.IsNullOrWhiteSpace(firstCell) && !string.IsNullOrWhiteSpace(secondCell))
                         {
                             var newPair = new CellPair { FirstCell = firstCell, SecondCell = secondCell };
@@ -149,6 +179,12 @@ namespace FilterV1
                     SaveCellPairs();
                     PasteTextBox.Text = string.Empty;
                     PasteTextBox.Focus();
+
+                    if (newPairs.Count > 1)
+                    {
+                        MessageBox.Show($"Added {newPairs.Count} pattern pairs successfully.", "Multiple Pairs Added",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
 
                 e.Handled = true;
@@ -160,22 +196,35 @@ namespace FilterV1
             var selectedItems = CellPairsGrid.SelectedItems.Cast<CellPair>().ToList();
             if (selectedItems.Any())
             {
-                foreach (var item in selectedItems)
+                string message = selectedItems.Count == 1 ?
+                    "Are you sure you want to remove the selected pattern pair?" :
+                    $"Are you sure you want to remove {selectedItems.Count} selected pattern pairs?";
+
+                if (MessageBox.Show(message, "Confirm Removal", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
-                    _cellPairs.Remove(item);
+                    foreach (var item in selectedItems)
+                    {
+                        _cellPairs.Remove(item);
+                    }
+                    CellPairsGrid.Items.Refresh();
+                    SaveCellPairs();
+                    MessageBox.Show($"Removed {selectedItems.Count} pattern pair(s).", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-                CellPairsGrid.Items.Refresh();
-                SaveCellPairs();
-                MessageBox.Show($"Removed {selectedItems.Count} pair(s).", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                MessageBox.Show("Please select at least one pair to remove.", "Selection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Please select at least one pattern pair to remove.", "Selection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_cellPairs.Count == 0)
+            {
+                MessageBox.Show("Please add at least one pattern pair before applying.", "No Patterns", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             _onApply(_cellPairs);
             SaveCellPairs();
             Close();

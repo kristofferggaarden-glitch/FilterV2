@@ -28,6 +28,9 @@ namespace FilterV1
             // Fix any patterns that don't have priorities assigned
             EnsurePrioritiesAreSet();
 
+            // Enable multi-selection for the ListBox
+            PatternsListBox.SelectionMode = SelectionMode.Extended;
+
             OptionComboBox.SelectionChanged += OptionComboBox_SelectionChanged;
             RefreshPatternsList();
             UpdatePreview();
@@ -122,64 +125,114 @@ namespace FilterV1
                 return;
             }
 
-            // Check for duplicates
-            if (_textFillPatterns.Any(p => p.ContainsText.Equals(containsText, StringComparison.OrdinalIgnoreCase)))
-            {
-                MessageBox.Show("A pattern with this text already exists.", "Duplicate Entry",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             var selectedItem = OptionComboBox.SelectedItem as ComboBoxItem;
             int selectedOption = selectedItem != null ? int.Parse(selectedItem.Tag.ToString()) : 1;
 
-            int priority = _textFillPatterns.Count > 0 ? _textFillPatterns.Max(p => p.Priority) + 1 : 1;
+            // Handle multi-line paste - split by newlines and process each line
+            string[] lines = containsText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int addedCount = 0;
 
-            _textFillPatterns.Add(new TextFillPattern
+            foreach (string line in lines)
             {
-                ContainsText = containsText,
-                SelectedOption = selectedOption,
-                Priority = priority
-            });
+                string trimmedLine = line.Trim();
+                if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                // Check for duplicates
+                if (_textFillPatterns.Any(p => p.ContainsText.Equals(trimmedLine, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue; // Skip duplicates
+                }
+
+                int priority = _textFillPatterns.Count > 0 ? _textFillPatterns.Max(p => p.Priority) + 1 : 1;
+
+                _textFillPatterns.Add(new TextFillPattern
+                {
+                    ContainsText = trimmedLine,
+                    SelectedOption = selectedOption,
+                    Priority = priority
+                });
+
+                addedCount++;
+            }
 
             ContainsTextTextBox.Clear();
             ContainsTextTextBox.Focus(); // Keep focus for easy multiple entries
             RefreshPatternsList();
+
+            if (addedCount > 1)
+            {
+                MessageBox.Show($"Added {addedCount} patterns successfully.", "Multiple Patterns Added",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private void MoveUpButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PatternsListBox.SelectedIndex > 0)
+            var selectedIndices = PatternsListBox.SelectedItems.Cast<object>().Select(item => PatternsListBox.Items.IndexOf(item)).OrderBy(i => i).ToList();
+
+            if (selectedIndices.Count == 0 || selectedIndices[0] == 0)
+                return;
+
+            var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+
+            for (int i = 0; i < selectedIndices.Count; i++)
             {
-                int selectedIndex = PatternsListBox.SelectedIndex;
-                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
-                var selectedPattern = orderedPatterns[selectedIndex];
-                var previousPattern = orderedPatterns[selectedIndex - 1];
+                int currentIndex = selectedIndices[i];
+                int targetIndex = currentIndex - 1;
 
-                int tempPriority = selectedPattern.Priority;
-                selectedPattern.Priority = previousPattern.Priority;
-                previousPattern.Priority = tempPriority;
+                if (selectedIndices.Contains(targetIndex))
+                    continue;
 
-                RefreshPatternsList();
-                PatternsListBox.SelectedIndex = selectedIndex - 1;
+                var currentPattern = orderedPatterns[currentIndex];
+                var targetPattern = orderedPatterns[targetIndex];
+
+                int tempPriority = currentPattern.Priority;
+                currentPattern.Priority = targetPattern.Priority;
+                targetPattern.Priority = tempPriority;
+            }
+
+            RefreshPatternsList();
+
+            PatternsListBox.SelectedItems.Clear();
+            foreach (int index in selectedIndices.Where(i => i > 0).Select(i => i - 1))
+            {
+                if (index >= 0 && index < PatternsListBox.Items.Count)
+                    PatternsListBox.SelectedItems.Add(PatternsListBox.Items[index]);
             }
         }
 
         private void MoveDownButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PatternsListBox.SelectedIndex >= 0 && PatternsListBox.SelectedIndex < PatternsListBox.Items.Count - 1)
+            var selectedIndices = PatternsListBox.SelectedItems.Cast<object>().Select(item => PatternsListBox.Items.IndexOf(item)).OrderByDescending(i => i).ToList();
+
+            if (selectedIndices.Count == 0 || selectedIndices[0] == PatternsListBox.Items.Count - 1)
+                return;
+
+            var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+
+            for (int i = 0; i < selectedIndices.Count; i++)
             {
-                int selectedIndex = PatternsListBox.SelectedIndex;
-                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
-                var selectedPattern = orderedPatterns[selectedIndex];
-                var nextPattern = orderedPatterns[selectedIndex + 1];
+                int currentIndex = selectedIndices[i];
+                int targetIndex = currentIndex + 1;
 
-                int tempPriority = selectedPattern.Priority;
-                selectedPattern.Priority = nextPattern.Priority;
-                nextPattern.Priority = tempPriority;
+                if (selectedIndices.Contains(targetIndex))
+                    continue;
 
-                RefreshPatternsList();
-                PatternsListBox.SelectedIndex = selectedIndex + 1;
+                var currentPattern = orderedPatterns[currentIndex];
+                var targetPattern = orderedPatterns[targetIndex];
+
+                int tempPriority = currentPattern.Priority;
+                currentPattern.Priority = targetPattern.Priority;
+                targetPattern.Priority = tempPriority;
+            }
+
+            RefreshPatternsList();
+
+            PatternsListBox.SelectedItems.Clear();
+            foreach (int index in selectedIndices.Where(i => i < PatternsListBox.Items.Count - 1).Select(i => i + 1))
+            {
+                if (index >= 0 && index < PatternsListBox.Items.Count)
+                    PatternsListBox.SelectedItems.Add(PatternsListBox.Items[index]);
             }
         }
 
@@ -209,17 +262,32 @@ namespace FilterV1
 
         private void RemovePatternButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PatternsListBox.SelectedIndex >= 0)
+            if (PatternsListBox.SelectedItems.Count == 0)
             {
-                var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
-                var selectedPattern = orderedPatterns[PatternsListBox.SelectedIndex];
-                _textFillPatterns.Remove(selectedPattern);
-                RefreshPatternsList();
-            }
-            else
-            {
-                MessageBox.Show("Please select a pattern to remove.", "Selection Required",
+                MessageBox.Show("Please select one or more patterns to remove.", "Selection Required",
                     MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var selectedIndices = PatternsListBox.SelectedItems.Cast<object>().Select(item => PatternsListBox.Items.IndexOf(item)).OrderByDescending(i => i).ToList();
+            var orderedPatterns = _textFillPatterns.OrderBy(p => p.Priority).ToList();
+
+            string message = selectedIndices.Count == 1 ?
+                "Are you sure you want to remove the selected pattern?" :
+                $"Are you sure you want to remove {selectedIndices.Count} selected patterns?";
+
+            if (MessageBox.Show(message, "Confirm Removal", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                foreach (int index in selectedIndices)
+                {
+                    if (index >= 0 && index < orderedPatterns.Count)
+                    {
+                        var patternToRemove = orderedPatterns[index];
+                        _textFillPatterns.Remove(patternToRemove);
+                    }
+                }
+
+                RefreshPatternsList();
             }
         }
 
