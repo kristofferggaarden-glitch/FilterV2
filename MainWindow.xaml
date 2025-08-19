@@ -40,6 +40,8 @@
                     ToolTip="Define custom groups and sort data with alternating colors"/>
             <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" Content="9. Custom Text Fill" Width="150" Margin="5"
                     ToolTip="Fill columns 2-4 based on text patterns"/>
+            <Button x:Name="StarDupesButton" Click="StarDupesButton_Click" Content="10. Star Dupes" Width="120" Margin="5"
+                    ToolTip="Mark duplicates with * based on priority patterns"/>
             <Button x:Name="UndoButton" Click="UndoButton_Click" Content="Undo" Width="100" Margin="5"/>
             <Button x:Name="SaveButton" Click="SaveButton_Click" Content="Save" Width="100" Margin="5"/>
         </StackPanel>

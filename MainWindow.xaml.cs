@@ -24,8 +24,10 @@ namespace FilterV1
         private bool _removeLVApplied;
         private List<GroupDefinition> _customGroups;
         private List<TextFillPattern> _textFillPatterns;
+        private List<StarDupesRule> _starDupesRules;
         private readonly string _settingsFilePath;
         private readonly string _textFillSettingsFilePath;
+        private readonly string _starDupesSettingsFilePath;
 
         public MainWindow()
         {
@@ -41,10 +43,12 @@ namespace FilterV1
             Directory.CreateDirectory(appFolder);
             _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
             _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
+            _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
 
-            // Load custom groups and text fill patterns from settings or use defaults
+            // Load custom groups, text fill patterns, and star dupes rules from settings
             LoadCustomGroups();
             LoadTextFillPatterns();
+            LoadStarDupesRules();
         }
 
         private void LoadCustomGroups()
@@ -119,12 +123,56 @@ namespace FilterV1
             }
         }
 
+        private void LoadStarDupesRules()
+        {
+            try
+            {
+                if (File.Exists(_starDupesSettingsFilePath))
+                {
+                    string json = File.ReadAllText(_starDupesSettingsFilePath);
+                    _starDupesRules = JsonSerializer.Deserialize<List<StarDupesRule>>(json) ?? GetDefaultStarDupesRules();
+                }
+                else
+                {
+                    _starDupesRules = GetDefaultStarDupesRules();
+                    SaveStarDupesRules();
+                }
+            }
+            catch (Exception)
+            {
+                _starDupesRules = GetDefaultStarDupesRules();
+            }
+        }
+
+        private void SaveStarDupesRules()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_starDupesRules, options);
+                File.WriteAllText(_starDupesSettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save star dupes settings: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         private List<GroupDefinition> GetDefaultGroups()
         {
             return new List<GroupDefinition>
             {
                 new GroupDefinition { GroupName = "X1 Group", ContainsText = "X1:", Priority = 1 },
                 new GroupDefinition { GroupName = "F11 Group", ContainsText = "F11-X", Priority = 2 }
+            };
+        }
+
+        private List<StarDupesRule> GetDefaultStarDupesRules()
+        {
+            return new List<StarDupesRule>
+            {
+                new StarDupesRule { DuplicateContains = "X2", AdjacentContains = "X1", Priority = 1 }
             };
         }
 
@@ -498,6 +546,25 @@ namespace FilterV1
             window.ShowDialog();
         }
 
+        private void StarDupesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Status: No file loaded";
+                return;
+            }
+
+            // Open the star dupes window with current rules
+            var window = new StarDupesWindow(_starDupesRules, rules =>
+            {
+                _starDupesRules = rules;
+                SaveStarDupesRules(); // Save to persistent storage
+                ApplyStarDupes();
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
         private void ApplyTextFillPatterns()
         {
             if (_dataTable == null) return;
@@ -688,6 +755,80 @@ namespace FilterV1
             var activeGroups = groupedRows.Select(g => g.Group.ContainsText).ToList();
             string groupSummary = string.Join(", ", activeGroups);
             UpdateGrid($"Status: Data sorted with priority text moved to left. Groups: {groupSummary}");
+        }
+
+        private void ApplyStarDupes()
+        {
+            if (_dataTable == null) return;
+
+            SaveState();
+            var modifiedCells = new List<string>();
+
+            // Find all values in columns 5 and 6
+            var cellValues = new Dictionary<string, List<(int rowIndex, int colIndex, string adjacentValue)>>();
+
+            for (int i = 0; i < _dataTable.Rows.Count; i++)
+            {
+                // Check column 5
+                string col5Value = _dataTable.Rows[i][4]?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(col5Value) && !col5Value.EndsWith("*"))
+                {
+                    string col6Adjacent = _dataTable.Rows[i][5]?.ToString()?.Trim() ?? "";
+                    if (!cellValues.ContainsKey(col5Value))
+                        cellValues[col5Value] = new List<(int, int, string)>();
+                    cellValues[col5Value].Add((i, 4, col6Adjacent)); // column 4 = column 5 (0-indexed)
+                }
+
+                // Check column 6
+                string col6Value = _dataTable.Rows[i][5]?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(col6Value) && !col6Value.EndsWith("*"))
+                {
+                    string col5Adjacent = _dataTable.Rows[i][4]?.ToString()?.Trim() ?? "";
+                    if (!cellValues.ContainsKey(col6Value))
+                        cellValues[col6Value] = new List<(int, int, string)>();
+                    cellValues[col6Value].Add((i, 5, col5Adjacent)); // column 5 = column 6 (0-indexed)
+                }
+            }
+
+            // Process duplicates using the new rule-based approach
+            foreach (var kvp in cellValues.Where(x => x.Value.Count > 1))
+            {
+                string duplicateValue = kvp.Key;
+                var locations = kvp.Value;
+
+                // Find the location that matches the highest priority rule
+                (int rowIndex, int colIndex, string adjacentValue)? bestLocation = null;
+                int bestPriority = int.MaxValue;
+
+                foreach (var location in locations)
+                {
+                    // Check if this location matches any rule
+                    foreach (var rule in _starDupesRules.OrderBy(r => r.Priority))
+                    {
+                        // Check if duplicate contains the rule's duplicate pattern
+                        // AND the adjacent cell contains the rule's adjacent pattern
+                        if (duplicateValue.Contains(rule.DuplicateContains) &&
+                            location.adjacentValue.Contains(rule.AdjacentContains))
+                        {
+                            if (rule.Priority < bestPriority)
+                            {
+                                bestPriority = rule.Priority;
+                                bestLocation = location;
+                            }
+                            break; // Found a matching rule for this location
+                        }
+                    }
+                }
+
+                // Mark the best location with "*" if one was found
+                if (bestLocation.HasValue)
+                {
+                    _dataTable.Rows[bestLocation.Value.rowIndex][bestLocation.Value.colIndex] = duplicateValue + "*";
+                    modifiedCells.Add($"Row {bestLocation.Value.rowIndex + 1}, Column {bestLocation.Value.colIndex + 1}");
+                }
+            }
+
+            UpdateGrid($"Status: Applied star marking to {modifiedCells.Count} duplicate cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
         // Helper method to get the priority of text (returns 0 if no priority text found)
