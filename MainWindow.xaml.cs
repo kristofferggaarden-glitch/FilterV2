@@ -288,7 +288,7 @@ namespace FilterV1
             StatusText.Text = $"{statusMessage} (Rows removed: {_rowsRemoved}, Total rows: {_dataTable.Rows.Count})";
         }
 
-        private void RemoveEqualsButton_Click(object sender, RoutedEventArgs e)
+        private void RemoveAllButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
             {
@@ -297,6 +297,10 @@ namespace FilterV1
             }
 
             SaveState();
+
+            // Execute all removal functions in sequence (original buttons 1, 2, 3, 4)
+
+            // 1. Remove = from cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int i = 0; i < _dataTable.Columns.Count; i++)
@@ -308,20 +312,8 @@ namespace FilterV1
                     }
                 }
             }
-            MoveCellsUpward();
-            _removeEqualsApplied = true;
-            UpdateGrid("Status: '=' removed from cells");
-        }
 
-        private void RemoveLVButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dataTable == null)
-            {
-                StatusText.Text = "Status: No file loaded";
-                return;
-            }
-
-            SaveState();
+            // 2. Remove +LV from cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int i = 0; i < _dataTable.Columns.Count; i++)
@@ -333,52 +325,8 @@ namespace FilterV1
                     }
                 }
             }
-            MoveCellsUpward();
-            _removeLVApplied = true;
-            UpdateGrid("Status: '+LV' removed from cells");
-        }
 
-        private void RemoveXSButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dataTable == null)
-            {
-                StatusText.Text = "Status: No file loaded";
-                return;
-            }
-
-            SaveState();
-            foreach (DataRow row in _dataTable.Rows)
-            {
-                for (int j = 0; j < _dataTable.Columns.Count; j++)
-                {
-                    string cellValue = row[j]?.ToString();
-                    if (!string.IsNullOrEmpty(cellValue) && cellValue.Contains("XS"))
-                    {
-                        row[j] = string.Empty;
-                        if (j > 0)
-                        {
-                            row[j - 1] = string.Empty;
-                        }
-                        if (j < _dataTable.Columns.Count - 1)
-                        {
-                            row[j + 1] = string.Empty;
-                        }
-                    }
-                }
-            }
-            MoveCellsUpward();
-            UpdateGrid("Status: Cells containing 'XS' and adjacent cells cleared");
-        }
-
-        private void RemoveMXButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dataTable == null)
-            {
-                StatusText.Text = "Status: No file loaded";
-                return;
-            }
-
-            SaveState();
+            // 3. Remove MX and adjacent cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
@@ -398,8 +346,33 @@ namespace FilterV1
                     }
                 }
             }
+
+            // 4. Remove XS and adjacent cells
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                for (int j = 0; j < _dataTable.Columns.Count; j++)
+                {
+                    string cellValue = row[j]?.ToString();
+                    if (!string.IsNullOrEmpty(cellValue) && cellValue.Contains("XS"))
+                    {
+                        row[j] = string.Empty;
+                        if (j > 0)
+                        {
+                            row[j - 1] = string.Empty;
+                        }
+                        if (j < _dataTable.Columns.Count - 1)
+                        {
+                            row[j + 1] = string.Empty;
+                        }
+                    }
+                }
+            }
+
+            // Move cells upward after all removals
             MoveCellsUpward();
-            UpdateGrid("Status: Cells containing 'MX' and adjacent cells cleared");
+            _removeEqualsApplied = true;
+            _removeLVApplied = true;
+            UpdateGrid("Status: Removed =, +LV, MX, and XS from cells");
         }
 
         private void RemoveRisingNumbersButton_Click(object sender, RoutedEventArgs e)

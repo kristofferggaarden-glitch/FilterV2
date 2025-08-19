@@ -25,22 +25,19 @@
 
         <!-- Control Buttons Row 1 -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
-            <Button x:Name="RemoveEqualsButton" Click="RemoveEqualsButton_Click" Content="1. Remove =" Width="100" Margin="5"/>
-            <Button x:Name="RemoveLVButton" Click="RemoveLVButton_Click" Content="2. Remove +LV" Width="100" Margin="5"/>
-            <Button x:Name="RemoveMXButton" Click="RemoveMXButton_Click" Content="3. Remove MX" Width="100" Margin="5"/>
-            <Button x:Name="RemoveXSButton" Click="RemoveXSButton_Click" Content="4. Remove XS" Width="100" Margin="5"/>
-            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" Content="5. Remove Dupes" Width="100" Margin="5"/>
-            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" Content="6. Remove Rising Numbers" Width="150" Margin="5"/>
+            <Button x:Name="RemoveAllButton" Click="RemoveAllButton_Click" Content="1. Remove =+LV+MX+XS" Width="150" Margin="5"/>
+            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" Content="2. Remove Dupes" Width="120" Margin="5"/>
+            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" Content="3. Remove Rising Numbers" Width="150" Margin="5"/>
+            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" Content="4. Remove Cells" Width="120" Margin="5"/>
         </StackPanel>
 
         <!-- Control Buttons Row 2 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5">
-            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" Content="7. Remove Cells" Width="120" Margin="5"/>
-            <Button x:Name="SortButton" Click="SortButton_Click" Content="8. Custom Sort" Width="120" Margin="5" 
+            <Button x:Name="SortButton" Click="SortButton_Click" Content="5. Custom Sort" Width="120" Margin="5" 
                     ToolTip="Define custom groups and sort data with alternating colors"/>
-            <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" Content="9. Custom Text Fill" Width="150" Margin="5"
+            <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" Content="6. Custom Text Fill" Width="150" Margin="5"
                     ToolTip="Fill columns 2-4 based on text patterns"/>
-            <Button x:Name="StarDupesButton" Click="StarDupesButton_Click" Content="10. Star Dupes" Width="120" Margin="5"
+            <Button x:Name="StarDupesButton" Click="StarDupesButton_Click" Content="7. Star Dupes" Width="120" Margin="5"
                     ToolTip="Mark duplicates with * based on priority patterns"/>
             <Button x:Name="UndoButton" Click="UndoButton_Click" Content="Undo" Width="100" Margin="5"/>
             <Button x:Name="SaveButton" Click="SaveButton_Click" Content="Save" Width="100" Margin="5"/>
