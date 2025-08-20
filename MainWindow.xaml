@@ -2,58 +2,288 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:FilterV1"
-        Title="Excel Filter Tool" Height="600" Width="1000">
+        Title="Excel Filter Tool - Professional Edition" 
+        Height="750" Width="1200"
+        Background="{StaticResource BackgroundBrush}"
+        WindowStartupLocation="CenterScreen"
+        MinHeight="600" MinWidth="900">
+
+    <Window.Resources>
+        <local:GroupConverter x:Key="GroupConverter" />
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- File Upload Section -->
-            <RowDefinition Height="Auto"/>
-            <!-- Control Buttons Row 1 -->
-            <RowDefinition Height="Auto"/>
-            <!-- Control Buttons Row 2 -->
             <RowDefinition Height="*"/>
-            <!-- DataGrid -->
             <RowDefinition Height="Auto"/>
-            <!-- Status Text -->
         </Grid.RowDefinitions>
 
-        <!-- File Upload Section -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-            <Button x:Name="UploadButton" Click="UploadButton_Click" Content="Upload" Width="100" Margin="5"/>
-            <TextBox x:Name="FilePathText" IsReadOnly="True" Width="600" Margin="5"/>
-        </StackPanel>
+        <!-- Header Section -->
+        <Border Grid.Row="0" Background="{StaticResource PrimaryBrush}" Height="60">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- Control Buttons Row 1 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
-            <Button x:Name="RemoveAllButton" Click="RemoveAllButton_Click" Content="1. Remove =+LV+MX+XS" Width="150" Margin="5"/>
-            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" Content="2. Remove Dupes" Width="120" Margin="5"/>
-            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" Content="3. Remove Rising Numbers" Width="150" Margin="5"/>
-            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" Content="4. Remove Cells" Width="120" Margin="5"/>
-        </StackPanel>
+                <!-- App Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
+                    <TextBlock Text="📊" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="Excel Filter Tool" FontSize="22" FontWeight="SemiBold" 
+                             Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
 
-        <!-- Control Buttons Row 2 -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5">
-            <Button x:Name="SortButton" Click="SortButton_Click" Content="5. Custom Sort" Width="120" Margin="5" 
-                    ToolTip="Define custom groups and sort data with alternating colors"/>
-            <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" Content="6. Custom Text Fill" Width="150" Margin="5"
-                    ToolTip="Fill columns 2-4 based on text patterns"/>
-            <Button x:Name="StarDupesButton" Click="StarDupesButton_Click" Content="7. Star Dupes" Width="120" Margin="5"
-                    ToolTip="Mark duplicates with * based on priority patterns"/>
-            <Button x:Name="UndoButton" Click="UndoButton_Click" Content="Undo" Width="100" Margin="5"/>
-            <Button x:Name="SaveButton" Click="SaveButton_Click" Content="Save" Width="100" Margin="5"/>
-        </StackPanel>
+                <!-- File Info -->
+                <TextBlock Grid.Column="1" x:Name="FilePathText" 
+                         Text="No file loaded" 
+                         Foreground="White" 
+                         FontSize="13"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"
+                         Opacity="0.9"/>
 
-        <!-- DataGrid for Excel Data -->
-        <DataGrid x:Name="ExcelDataGrid" Grid.Row="3" Margin="5" AutoGenerateColumns="True" CanUserAddRows="False">
-            <DataGrid.Resources>
-                <local:GroupConverter x:Key="GroupConverter" />
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
-                </Style>
-            </DataGrid.Resources>
-        </DataGrid>
+                <!-- Upload Button in Header -->
+                <Button Grid.Column="2" x:Name="UploadButton" 
+                        Click="UploadButton_Click" 
+                        Content="📁 Upload Excel" 
+                        Style="{StaticResource SuccessButton}"
+                        Width="140"
+                        Height="36"
+                        Margin="20,0"
+                        FontSize="14"/>
+            </Grid>
+        </Border>
 
-        <!-- Status Text -->
-        <TextBlock x:Name="StatusText" Grid.Row="4" Margin="5" VerticalAlignment="Bottom"/>
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Control Panel -->
+            <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="15,15,15,5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Section Title -->
+                    <TextBlock Grid.Row="0" Text="Data Processing Controls" Style="{StaticResource TitleText}"/>
+
+                    <!-- Primary Operations -->
+                    <StackPanel Grid.Row="1" Margin="0,10,0,0">
+                        <TextBlock Text="Quick Actions" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                        <WrapPanel>
+                            <Button x:Name="RemoveAllButton" 
+                                    Click="RemoveAllButton_Click" 
+                                    Style="{StaticResource ModernButton}"
+                                    Width="180"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔧" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Remove =+LV+MX+XS" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="RemoveDupesButton" 
+                                    Click="RemoveDupesButton_Click" 
+                                    Style="{StaticResource ModernButton}"
+                                    Width="150"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Remove Dupes" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="RemoveRisingNumbersButton" 
+                                    Click="RemoveRisingNumbersButton_Click" 
+                                    Style="{StaticResource ModernButton}"
+                                    Width="180"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📈" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Remove Rising Numbers" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="RemoveCellsButton" 
+                                    Click="RemoveDefinedCellsButton_Click" 
+                                    Style="{StaticResource ModernButton}"
+                                    Width="140"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="✂️" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Remove Cells" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <!-- Advanced Operations -->
+                    <StackPanel Grid.Row="2" Margin="0,15,0,0">
+                        <TextBlock Text="Advanced Operations" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                        <WrapPanel>
+                            <Button x:Name="SortButton" 
+                                    Click="SortButton_Click" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Width="140"
+                                    Height="40"
+                                    Margin="0,0,10,10"
+                                    ToolTip="Define custom groups and sort data with alternating colors">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🎯" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Custom Sort" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="CustomTextFillButton" 
+                                    Click="CustomTextFillButton_Click" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Width="160"
+                                    Height="40"
+                                    Margin="0,0,10,10"
+                                    ToolTip="Fill columns 2-4 based on text patterns">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="✏️" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Custom Text Fill" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="StarDupesButton" 
+                                    Click="StarDupesButton_Click" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Width="140"
+                                    Height="40"
+                                    Margin="0,0,10,10"
+                                    ToolTip="Mark duplicates with * based on priority patterns">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⭐" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Star Dupes" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Separator Width="1" Height="40" Background="{StaticResource BorderBrush}" Margin="10,0"/>
+
+                            <Button x:Name="UndoButton" 
+                                    Click="UndoButton_Click" 
+                                    Style="{StaticResource DangerButton}"
+                                    Width="100"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="↩️" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Undo" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="SaveButton" 
+                                    Click="SaveButton_Click" 
+                                    Style="{StaticResource SuccessButton}"
+                                    Width="100"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="💾" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Save" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Data Grid Container -->
+            <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="15,5,15,15">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Grid Header -->
+                    <Border Grid.Row="0" Background="{StaticResource BackgroundBrush}" 
+                            CornerRadius="6" Padding="15,10" Margin="0,0,0,10">
+                        <Grid>
+                            <TextBlock Text="Data Preview" Style="{StaticResource SubtitleText}" 
+                                     HorizontalAlignment="Left" Margin="0"/>
+                            <TextBlock x:Name="RowCountText" 
+                                     HorizontalAlignment="Right"
+                                     FontSize="13"
+                                     Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- DataGrid -->
+                    <Border Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" 
+                            BorderThickness="1" CornerRadius="6">
+                        <DataGrid x:Name="ExcelDataGrid" 
+                                  Style="{StaticResource ModernDataGrid}"
+                                  AutoGenerateColumns="True" 
+                                  CanUserAddRows="False"
+                                  CanUserReorderColumns="True"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  ScrollViewer.CanContentScroll="True"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
+                                    <Setter Property="Height" Value="35"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#F0F8FF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#E3F2FD"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                            <Setter Property="BorderThickness" Value="0,1,0,1"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Resources>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Style="{StaticResource StatusBar}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" x:Name="StatusText" 
+                         Text="Ready" 
+                         Foreground="White" 
+                         VerticalAlignment="Center"
+                         Margin="20,0"
+                         FontSize="13"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0">
+                    <TextBlock Text="Version 2.0" 
+                             Foreground="White" 
+                             Opacity="0.7"
+                             VerticalAlignment="Center"
+                             FontSize="12"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
