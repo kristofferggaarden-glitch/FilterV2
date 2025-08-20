@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.RemoveCellsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Remove Cell Pairs" Height="500" Width="500"
+        Title="Remove Cell Pairs" Height="486" Width="827"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -33,7 +33,7 @@
                   AutoGenerateColumns="False" 
                   SelectionMode="Extended" 
                   CanUserAddRows="False" 
-                  CanUserDeleteRows="False">
+                  CanUserDeleteRows="False" SelectionChanged="CellPairsGrid_SelectionChanged">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Column 5 Contains" Binding="{Binding FirstCell}" Width="*" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Column 6 Contains" Binding="{Binding SecondCell}" Width="*" IsReadOnly="True"/>
@@ -55,9 +55,9 @@
 
         <!-- Button Section -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="RemoveButton" Click="RemoveButton_Click" Content="Remove Selected" Width="120" Margin="0,0,10,0"/>
-            <Button x:Name="ApplyButton" Click="ApplyButton_Click" Content="Apply" Width="80" Margin="0,0,10,0"/>
-            <Button x:Name="CancelButton" Click="CancelButton_Click" Content="Cancel" Width="80"/>
+            <Button x:Name="RemoveButton" Click="RemoveButton_Click" Content="Remove Selected" Width="70" Margin="0,0,10,0" Height="39"/>
+            <Button x:Name="ApplyButton" Click="ApplyButton_Click" Content="Apply" Width="93" Margin="0,0,10,0" Height="51" Background="#FF47F717" FontWeight="Bold"/>
+            <Button x:Name="CancelButton" Click="CancelButton_Click" Content="Cancel" Width="62" Height="43" Background="#FFED1B1B"/>
         </StackPanel>
     </Grid>
 </Window>
