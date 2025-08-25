@@ -1,9 +1,10 @@
 ﻿<Window x:Class="FilterV1.StarDupesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Star Duplicates Settings" Height="500" Width="650"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="10">
+        Title="Star Duplicates Settings" Height="870" Width="737"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -13,83 +14,110 @@
         </Grid.RowDefinitions>
 
         <!-- Instructions -->
-        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontWeight="Bold">
-            Define priority rules for marking duplicates with "*". When duplicates are found, the duplicate that matches 
-            both the "Duplicate Contains" and "Adjacent Contains" criteria will be marked with "*".
-        </TextBlock>
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                Define priority rules for marking duplicates with "*". When duplicates are found, the duplicate that matches 
+                both the "Duplicate Contains" and "Adjacent Contains" criteria will be marked with "*".
+            </TextBlock>
+        </Border>
 
         <!-- Add Priority Rule Section -->
-        <Grid Grid.Row="1" Margin="0,0,0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0" Text="Duplicate Contains:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="DuplicateContainsTextBox" Grid.Column="1" Margin="0,0,10,0"
-                     ToolTip="Text that the duplicate cell must contain (e.g., X2)"
-                     KeyDown="DuplicateContainsTextBox_KeyDown"/>
+                <TextBlock Grid.Column="0" Text="Duplicate Contains:" VerticalAlignment="Center" 
+                         Margin="0,0,10,0" Style="{StaticResource SubtitleText}"/>
+                <TextBox x:Name="DuplicateContainsTextBox" Grid.Column="1" Margin="0,0,15,0"
+                         Style="{StaticResource ModernTextBox}"
+                         ToolTip="Text that the duplicate cell must contain (e.g., X2)"
+                         KeyDown="DuplicateContainsTextBox_KeyDown"/>
 
-            <TextBlock Grid.Column="2" Text="Adjacent Contains:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="AdjacentContainsTextBox" Grid.Column="3" Margin="0,0,10,0"
-                     ToolTip="Text that the adjacent cell must contain (e.g., X1)"
-                     KeyDown="AdjacentContainsTextBox_KeyDown"/>
+                <TextBlock Grid.Column="2" Text="Adjacent Contains:" VerticalAlignment="Center" 
+                         Margin="0,0,10,0" Style="{StaticResource SubtitleText}"/>
+                <TextBox x:Name="AdjacentContainsTextBox" Grid.Column="3" Margin="0,0,15,0"
+                         Style="{StaticResource ModernTextBox}"
+                         ToolTip="Text that the adjacent cell must contain (e.g., X1)"
+                         KeyDown="AdjacentContainsTextBox_KeyDown"/>
 
-            <Button x:Name="AddRuleButton" Grid.Column="4" Content="Add Rule" 
-                    Click="AddRuleButton_Click" Width="80"/>
-        </Grid>
+                <Button x:Name="AddRuleButton" Grid.Column="4" Content="Add Rule" 
+                        Click="AddRuleButton_Click" Style="{StaticResource ModernButton}" Width="90"/>
+            </Grid>
+        </Border>
 
         <!-- Priority Rules List -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <ListBox x:Name="RulesListBox" Grid.Column="0" Margin="0,0,10,0"/>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Priority Rules" 
+                         Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
 
-            <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
-                        Width="100" Margin="0,0,0,5" ToolTip="Increase priority (higher priority = gets star first)"/>
-                <Button x:Name="MoveDownButton" Content="Move Down" Click="MoveDownButton_Click" 
-                        Width="100" Margin="0,0,0,5" ToolTip="Decrease priority (lower priority = gets star last)"/>
-                <Button x:Name="EditRuleButton" Content="Edit Selected" Click="EditRuleButton_Click" 
-                        Width="100" Margin="0,0,0,5" ToolTip="Edit the selected rule"/>
-                <Button x:Name="RemoveRuleButton" Content="Remove" Click="RemoveRuleButton_Click" 
-                        Width="100" Margin="0,0,0,5" ToolTip="Remove selected rule"/>
-            </StackPanel>
-        </Grid>
+                <ListBox x:Name="RulesListBox" Grid.Row="1" Grid.Column="0" 
+                         Margin="0,0,15,0" Style="{StaticResource ModernListBox}"/>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
+                    <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="113" Margin="0,0,0,5" 
+                            ToolTip="Increase priority (higher priority = gets star first)"/>
+                    <Button x:Name="MoveDownButton" Content="Move Down" Click="MoveDownButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="112" Margin="0,0,0,5" 
+                            ToolTip="Decrease priority (lower priority = gets star last)"/>
+                    <Button x:Name="EditRuleButton" Content="Edit Selected" Click="EditRuleButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="114" Margin="0,0,0,5" 
+                            ToolTip="Edit the selected rule"/>
+                    <Button x:Name="RemoveRuleButton" Content="Remove" Click="RemoveRuleButton_Click" 
+                            Style="{StaticResource DangerButton}" Width="112" 
+                            ToolTip="Remove selected rule"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Example Section -->
-        <Grid Grid.Row="3" Margin="0,15,0,10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <Border Grid.Row="3" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="Example:" FontWeight="Bold" Margin="0,0,0,5"/>
-            <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,2">
-                Rule: "Duplicate Contains: X2" + "Adjacent Contains: X1"
-            </TextBlock>
-            <TextBlock Grid.Row="2" TextWrapping="Wrap" Margin="0,0,0,2">
-                • If "X2:21" appears twice, and one has adjacent cell "X1:59"
-            </TextBlock>
-            <TextBlock Grid.Row="3" TextWrapping="Wrap" FontStyle="Italic">
-                • The "X2:21" with "X1:59" adjacent → becomes "X2:21*"
-            </TextBlock>
-        </Grid>
+                <TextBlock Grid.Row="0" Text="Example:" Style="{StaticResource SubtitleText}" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" TextWrapping="Wrap" Margin="0,0,0,3" Style="{StaticResource DescriptionText}">
+                    Rule: "Duplicate Contains: X2" + "Adjacent Contains: X1"
+                </TextBlock>
+                <TextBlock Grid.Row="2" TextWrapping="Wrap" Margin="0,0,0,3" Style="{StaticResource DescriptionText}">
+                    • If "X2:21" appears twice, and one has adjacent cell "X1:59"
+                </TextBlock>
+                <TextBlock Grid.Row="3" TextWrapping="Wrap" FontStyle="Italic" Style="{StaticResource DescriptionText}">
+                    • The "X2:21" with "X1:59" adjacent → becomes "X2:21*"
+                </TextBlock>
+            </Grid>
+        </Border>
 
         <!-- Action Buttons -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="ApplyStarDupesButton" Content="Apply Star Dupes" Click="ApplyStarDupesButton_Click" 
-                    Width="120" Margin="0,0,10,0"/>
-            <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
-                    Width="80" IsCancel="True"/>
-        </StackPanel>
+        <Border Grid.Row="4" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="ApplyStarDupesButton" Content="Apply Star Dupes" 
+                        Click="ApplyStarDupesButton_Click" Style="{StaticResource SuccessButton}"
+                        Width="140" Margin="0,0,10,0"/>
+                <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
+                        Style="{StaticResource SecondaryButton}" Width="80" IsCancel="True"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

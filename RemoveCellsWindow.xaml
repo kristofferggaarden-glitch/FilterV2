@@ -1,63 +1,106 @@
 ﻿<Window x:Class="FilterV1.RemoveCellsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Remove Cell Pairs" Height="486" Width="827"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="10">
+        Title="Remove Cell Pairs" Height="728" Width="808"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Instructions -->
-        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,15" FontWeight="Bold">
-            Define text patterns for removing rows. Rows where column 5 contains the first pattern 
-            AND column 6 contains the second pattern will be removed.
-        </TextBlock>
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                Define text patterns for removing rows. Rows where column 5 contains the first pattern 
+                AND column 6 contains the second pattern will be removed.
+            </TextBlock>
+        </Border>
 
         <!-- Input Section -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBox x:Name="PasteTextBox" Width="350" Margin="0,0,10,0" 
-                     Text="Paste cell pairs here..." 
-                     GotFocus="TextBox_GotFocus" 
-                     LostFocus="TextBox_LostFocus" 
-                     PreviewKeyDown="PasteTextBox_PreviewKeyDown"
-                     ToolTip="Paste pairs from Excel or enter manually. Format: FirstPattern[Tab]SecondPattern"/>
-            <Button x:Name="AddButton" Click="AddButton_Click" Content="Add" Width="60"/>
-        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="PasteTextBox" Width="400" Margin="0,0,15,0" 
+                         Style="{StaticResource ModernTextBox}"
+                         Text="Paste cell pairs here..." 
+                         GotFocus="TextBox_GotFocus" 
+                         LostFocus="TextBox_LostFocus" 
+                         PreviewKeyDown="PasteTextBox_PreviewKeyDown"
+                         ToolTip="Paste pairs from Excel or enter manually. Format: FirstPattern[Tab]SecondPattern"/>
+                <Button x:Name="AddButton" Click="AddButton_Click" Content="Add Pairs" 
+                        Style="{StaticResource ModernButton}" Width="100"/>
+            </StackPanel>
+        </Border>
 
         <!-- DataGrid for Cell Pairs -->
-        <DataGrid x:Name="CellPairsGrid" Grid.Row="2" Margin="0,0,0,10" 
-                  AutoGenerateColumns="False" 
-                  SelectionMode="Extended" 
-                  CanUserAddRows="False" 
-                  CanUserDeleteRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Column 5 Contains" Binding="{Binding FirstCell}" Width="*" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Column 6 Contains" Binding="{Binding SecondCell}" Width="*" IsReadOnly="True"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Defined Pattern Pairs" 
+                         Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+
+                <DataGrid x:Name="CellPairsGrid" Grid.Row="1" 
+                          Style="{StaticResource ModernDataGrid}"
+                          AutoGenerateColumns="False" 
+                          SelectionMode="Extended" 
+                          CanUserAddRows="False" 
+                          CanUserDeleteRows="False"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{StaticResource BorderBrush}"
+                          Background="White">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Column 5 Contains" Binding="{Binding FirstCell}" Width="*" IsReadOnly="True">
+                            <DataGridTextColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.HeaderStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Column 6 Contains" Binding="{Binding SecondCell}" Width="*" IsReadOnly="True">
+                            <DataGridTextColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.HeaderStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
 
         <!-- Example Section -->
-        <Grid Grid.Row="3" Margin="0,0,0,15">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <Border Grid.Row="3" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="Example:" FontWeight="Bold" Margin="0,0,0,5"/>
-            <TextBlock Grid.Row="1" TextWrapping="Wrap" FontStyle="Italic">
-                Pattern "X2" + "K01" will remove rows where column 5 contains "X2" AND column 6 contains "K01"
-            </TextBlock>
-        </Grid>
+                <TextBlock Grid.Row="0" Text="Example:" Style="{StaticResource SubtitleText}" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                    Pattern "X2" + "K01" will remove rows where column 5 contains "X2" AND column 6 contains "K01"
+                </TextBlock>
+            </Grid>
+        </Border>
 
         <!-- Button Section -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="RemoveButton" Click="RemoveButton_Click" Content="Remove Selected" Width="70" Margin="0,0,10,0" Height="39"/>
-            <Button x:Name="ApplyButton" Click="ApplyButton_Click" Content="Apply" Width="93" Margin="0,0,10,0" Height="51" Background="#FF47F717" FontWeight="Bold"/>
-            <Button x:Name="CancelButton" Click="CancelButton_Click" Content="Cancel" Width="62" Height="43" Background="#FFED1B1B"/>
-        </StackPanel>
+        <Border Grid.Row="4" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="RemoveButton" Click="RemoveButton_Click" Content="Remove Selected" 
+                        Style="{StaticResource DangerButton}" Width="140" Margin="0,0,10,0"/>
+                <Button x:Name="ApplyButton" Click="ApplyButton_Click" Content="Apply Removal" 
+                        Style="{StaticResource SuccessButton}" Width="120" Margin="0,0,10,0"/>
+                <Button x:Name="CancelButton" Click="CancelButton_Click" Content="Cancel" 
+                        Style="{StaticResource SecondaryButton}" Width="80"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

@@ -83,7 +83,7 @@
                             <Button x:Name="RemoveAllButton" 
                                     Click="RemoveAllButton_Click" 
                                     Style="{StaticResource ModernButton}"
-                                    Width="180"
+                                    Width="204"
                                     Height="40"
                                     Margin="0,0,10,10">
                                 <StackPanel Orientation="Horizontal">
@@ -131,7 +131,7 @@
                             <Button x:Name="RemoveRelayButton" 
                                     Click="RemoveRelayButton_Click" 
                                     Style="{StaticResource ModernButton}"
-                                    Width="140"
+                                    Width="159"
                                     Height="40"
                                     Margin="0,0,10,10">
                                 <StackPanel Orientation="Horizontal">
