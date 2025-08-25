@@ -127,6 +127,18 @@
                                     <TextBlock Text="Remove Cells" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+
+                            <Button x:Name="RemoveRelayButton" 
+                                    Click="RemoveRelayButton_Click" 
+                                    Style="{StaticResource ModernButton}"
+                                    Width="140"
+                                    Height="40"
+                                    Margin="0,0,10,10">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔌" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Remove Relay" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </WrapPanel>
                     </StackPanel>
 
@@ -170,6 +182,19 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⭐" FontSize="16" Margin="0,0,8,0"/>
                                     <TextBlock Text="Star Dupes" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="ReorganizeCellsButton" 
+                                    Click="ReorganizeCellsButton_Click" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Width="160"
+                                    Height="40"
+                                    Margin="0,0,10,10"
+                                    ToolTip="Reorganize columns: 5→2, 6→3, 2→4, 3→5, 4→6">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Reorganize Cells" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 

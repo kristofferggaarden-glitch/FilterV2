@@ -25,9 +25,11 @@ namespace FilterV1
         private List<GroupDefinition> _customGroups;
         private List<TextFillPattern> _textFillPatterns;
         private List<StarDupesRule> _starDupesRules;
+        private List<RemoveRelayPattern> _removeRelayPatterns;
         private readonly string _settingsFilePath;
         private readonly string _textFillSettingsFilePath;
         private readonly string _starDupesSettingsFilePath;
+        private readonly string _removeRelaySettingsFilePath;
 
         public MainWindow()
         {
@@ -44,11 +46,13 @@ namespace FilterV1
             _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
             _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
+            _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
 
-            // Load custom groups, text fill patterns, and star dupes rules from settings
+            // Load custom groups, text fill patterns, star dupes rules, and remove relay patterns from settings
             LoadCustomGroups();
             LoadTextFillPatterns();
             LoadStarDupesRules();
+            LoadRemoveRelayPatterns();
         }
 
         private void LoadCustomGroups()
@@ -155,6 +159,42 @@ namespace FilterV1
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save star dupes settings: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void LoadRemoveRelayPatterns()
+        {
+            try
+            {
+                if (File.Exists(_removeRelaySettingsFilePath))
+                {
+                    string json = File.ReadAllText(_removeRelaySettingsFilePath);
+                    _removeRelayPatterns = JsonSerializer.Deserialize<List<RemoveRelayPattern>>(json) ?? new List<RemoveRelayPattern>();
+                }
+                else
+                {
+                    _removeRelayPatterns = new List<RemoveRelayPattern>();
+                    SaveRemoveRelayPatterns();
+                }
+            }
+            catch (Exception)
+            {
+                _removeRelayPatterns = new List<RemoveRelayPattern>();
+            }
+        }
+
+        private void SaveRemoveRelayPatterns()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_removeRelayPatterns, options);
+                File.WriteAllText(_removeRelaySettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save remove relay settings: {ex.Message}", "Save Error",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
@@ -502,6 +542,18 @@ namespace FilterV1
             window.ShowDialog();
         }
 
+        private void ReorganizeCellsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Status: No file loaded";
+                return;
+            }
+
+            SaveState();
+            ApplyReorganizeCells();
+        }
+
         private void CustomTextFillButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -535,6 +587,25 @@ namespace FilterV1
                 _starDupesRules = rules;
                 SaveStarDupesRules(); // Save to persistent storage
                 ApplyStarDupes();
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
+        private void RemoveRelayButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Status: No file loaded";
+                return;
+            }
+
+            // Open the remove relay window with current patterns
+            var window = new RemoveRelayWindow(_removeRelayPatterns, patterns =>
+            {
+                _removeRelayPatterns = patterns;
+                SaveRemoveRelayPatterns(); // Save to persistent storage
+                ApplyRemoveRelay();
             });
             window.Owner = this;
             window.ShowDialog();
@@ -685,8 +756,8 @@ namespace FilterV1
             // Create new sorted table
             DataTable sortedTable = _dataTable.Clone();
 
-            // Add grouped rows with sequential color indices (0, 1, 0, 1, ...)
-            int colorIndex = 0;
+            // Add grouped rows with sequential group numbers (1, 2, 3, 4...)
+            int groupIndex = 1;
             foreach (var (group, rows) in groupedRows)
             {
                 foreach (var row in rows)
@@ -694,20 +765,20 @@ namespace FilterV1
                     var newRow = sortedTable.NewRow();
                     newRow.ItemArray = row.ItemArray;
 
-                    // Set color index for alternating colors
+                    // Set group number for the entire group
                     if (sortedTable.Columns.Count > 6)
                     {
-                        newRow[6] = colorIndex.ToString();
+                        newRow[6] = groupIndex.ToString();
                     }
                     else if (sortedTable.Columns.Count == 6)
                     {
                         sortedTable.Columns.Add("Group", typeof(string));
-                        newRow[6] = colorIndex.ToString();
+                        newRow[6] = groupIndex.ToString();
                     }
 
                     sortedTable.Rows.Add(newRow);
                 }
-                colorIndex = (colorIndex + 1) % 2; // Alternate between 0 and 1
+                groupIndex++; // Move to next group number
             }
 
             // Add ungrouped rows at the end
@@ -806,6 +877,84 @@ namespace FilterV1
             UpdateGrid($"Status: Applied star marking to {modifiedCells.Count} duplicate cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
+        private void ApplyRemoveRelay()
+        {
+            if (_dataTable == null) return;
+
+            SaveState();
+            var modifiedCells = new List<string>();
+
+            // Go through all cells in the data table
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                for (int j = 0; j < _dataTable.Columns.Count; j++)
+                {
+                    string cellValue = row[j]?.ToString();
+                    if (string.IsNullOrEmpty(cellValue)) continue;
+
+                    // Check if this cell contains any of the remove relay patterns
+                    foreach (var pattern in _removeRelayPatterns)
+                    {
+                        if (cellValue.Contains(pattern.ContainsText))
+                        {
+                            // Remove this cell and the adjacent cell (to the right)
+                            modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 1}");
+                            row[j] = string.Empty; // Remove current cell
+
+                            // Remove adjacent cell to the right if it exists
+                            if (j < _dataTable.Columns.Count - 1)
+                            {
+                                row[j + 1] = string.Empty;
+                                modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 2}");
+                            }
+
+                            break; // Only apply first matching pattern for this cell
+                        }
+                    }
+                }
+            }
+
+            MoveCellsUpward();
+            UpdateGrid($"Status: Removed relay cells and adjacent cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+        }
+
+        private void ApplyReorganizeCells()
+        {
+            if (_dataTable == null) return;
+
+            int totalRows = _dataTable.Rows.Count;
+            int reorganizedRows = 0;
+
+            // Check if we have enough columns (at least 6 columns needed for reorganization)
+            if (_dataTable.Columns.Count < 6)
+            {
+                UpdateGrid("Status: Need at least 6 columns for reorganization");
+                return;
+            }
+
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                // Store original values
+                string col2Original = row[1]?.ToString() ?? ""; // Column 2 (index 1)
+                string col3Original = row[2]?.ToString() ?? ""; // Column 3 (index 2)
+                string col4Original = row[3]?.ToString() ?? ""; // Column 4 (index 3)
+                string col5Original = row[4]?.ToString() ?? ""; // Column 5 (index 4)
+                string col6Original = row[5]?.ToString() ?? ""; // Column 6 (index 5)
+
+                // Apply reorganization:
+                // 5 → 2, 6 → 3, 2 → 4, 3 → 5, 4 → 6
+                row[1] = col5Original; // Column 5 → Column 2
+                row[2] = col6Original; // Column 6 → Column 3
+                row[3] = col2Original; // Column 2 → Column 4
+                row[4] = col3Original; // Column 3 → Column 5
+                row[5] = col4Original; // Column 4 → Column 6
+
+                reorganizedRows++;
+            }
+
+            UpdateGrid($"Status: Reorganized columns (5→2, 6→3, 2→4, 3→5, 4→6) for {reorganizedRows} rows");
+        }
+
         // Helper method to get the priority of text (returns 0 if no priority text found)
         private int GetTextPriority(string text)
         {
@@ -862,8 +1011,8 @@ namespace FilterV1
 
                         if (int.TryParse(colorIndexStr, out int colorIndex))
                         {
-                            // Alternate colors: 0 = green, 1 = pink
-                            XLColor rowColor = colorIndex == 0 ? XLColor.LightGreen : XLColor.LightPink;
+                            // Alternate colors: odd groups = green, even groups = pink
+                            XLColor rowColor = (colorIndex % 2 == 1) ? XLColor.LightGreen : XLColor.LightPink;
                             for (int j = 1; j <= _dataTable.Columns.Count; j++)
                             {
                                 row.Cell(j).Style.Fill.BackgroundColor = rowColor;
@@ -893,8 +1042,8 @@ namespace FilterV1
         {
             if (value is string colorIndexStr && int.TryParse(colorIndexStr, out int colorIndex))
             {
-                // Alternate colors: 0 = green, 1 = pink
-                return colorIndex == 0 ? Brushes.LightGreen : Brushes.LightPink;
+                // Alternate colors: odd groups = green, even groups = pink
+                return (colorIndex % 2 == 1) ? Brushes.LightGreen : Brushes.LightPink;
             }
             return Brushes.Transparent;
         }
