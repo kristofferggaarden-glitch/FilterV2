@@ -33,7 +33,7 @@
                   AutoGenerateColumns="False" 
                   SelectionMode="Extended" 
                   CanUserAddRows="False" 
-                  CanUserDeleteRows="False" SelectionChanged="CellPairsGrid_SelectionChanged">
+                  CanUserDeleteRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Column 5 Contains" Binding="{Binding FirstCell}" Width="*" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Column 6 Contains" Binding="{Binding SecondCell}" Width="*" IsReadOnly="True"/>

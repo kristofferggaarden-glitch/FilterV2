@@ -228,7 +228,6 @@
                     <Border Grid.Row="1" BorderBrush="{StaticResource BorderBrush}" 
                             BorderThickness="1" CornerRadius="6">
                         <DataGrid x:Name="ExcelDataGrid" 
-                                  Style="{StaticResource ModernDataGrid}"
                                   AutoGenerateColumns="True" 
                                   CanUserAddRows="False"
                                   CanUserReorderColumns="True"
@@ -238,7 +237,11 @@
                                   VirtualizingPanel.VirtualizationMode="Recycling"
                                   ScrollViewer.CanContentScroll="True"
                                   EnableRowVirtualization="True"
-                                  EnableColumnVirtualization="True">
+                                  EnableColumnVirtualization="True"
+                                  GridLinesVisibility="All"
+                                  HorizontalGridLinesBrush="Black"
+                                  VerticalGridLinesBrush="Black"
+                                  Background="White">
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridRow">
                                     <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
