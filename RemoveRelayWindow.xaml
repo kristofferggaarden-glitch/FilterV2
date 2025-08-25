@@ -70,7 +70,7 @@
         <!-- Action Buttons -->
         <Border Grid.Row="3" Background="Transparent" Padding="0,10,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="ApplyRemoveButton" Content="Apply Remove Relay" 
+                <Button x:Name="ApplyRemoveButton" Content="Apply Remove" 
                         Click="ApplyRemoveButton_Click" Style="{StaticResource SuccessButton}"
                         Width="168" Margin="0,0,10,0"/>
                 <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
