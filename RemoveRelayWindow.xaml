@@ -16,7 +16,7 @@
         <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
             <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
                 Define text patterns for removing cells. When a cell contains the specified text, 
-                both that cell and the adjacent cell (to the right) will be removed. Only checked patterns will be applied.
+                that cell and its adjacent cell (both left and right neighbors) will be removed. Only checked patterns will be applied.
             </TextBlock>
         </Border>
 
@@ -36,8 +36,8 @@
                          ToolTip="Text pattern to search for (e.g., RELAY)"
                          KeyDown="ContainsTextTextBox_KeyDown"/>
 
-                <Button x:Name="AddPatternButton" Grid.Column="1" Content="Add Pattern" 
-                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}" Margin="328,0,-11,0" Grid.ColumnSpan="2"/>
+                <Button x:Name="AddPatternButton" Grid.Column="2" Content="Add Pattern" 
+                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}"/>
             </Grid>
         </Border>
 
@@ -68,11 +68,11 @@
 
                 <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
                     <Button x:Name="SelectAllButton" Content="Select All" Click="SelectAllButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="103" Margin="0,0,0,5"/>
+                            Style="{StaticResource SecondaryButton}" Width="105" Margin="0,0,0,5"/>
                     <Button x:Name="DeselectAllButton" Content="Deselect All" Click="DeselectAllButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="106" Margin="0,0,0,5"/>
+                            Style="{StaticResource SecondaryButton}" Width="105" Margin="0,0,0,5"/>
                     <Button x:Name="RemovePatternButton" Content="Remove" Click="RemovePatternButton_Click" 
-                            Style="{StaticResource DangerButton}" Width="104" 
+                            Style="{StaticResource DangerButton}" Width="105" 
                             ToolTip="Remove selected pattern"/>
                 </StackPanel>
             </Grid>

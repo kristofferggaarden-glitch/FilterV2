@@ -962,11 +962,18 @@ namespace FilterV1
                     {
                         if (cellValue.Contains(pattern.ContainsText))
                         {
-                            // Remove this cell and the adjacent cell (to the right)
+                            // Remove this cell
                             modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 1}");
-                            row[j] = string.Empty; // Remove current cell
+                            row[j] = string.Empty;
 
-                            // Remove adjacent cell to the right if it exists
+                            // Remove adjacent cell to the LEFT if it exists
+                            if (j > 0)
+                            {
+                                row[j - 1] = string.Empty;
+                                modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j}");
+                            }
+
+                            // Remove adjacent cell to the RIGHT if it exists
                             if (j < _dataTable.Columns.Count - 1)
                             {
                                 row[j + 1] = string.Empty;
@@ -980,7 +987,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Status: Removed irregular cells and adjacent cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Status: Removed irregular cells and adjacent cells (both sides): {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
         private void ApplyReorganizeCells()
