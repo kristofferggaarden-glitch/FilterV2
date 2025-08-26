@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.RemoveCellsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Remove Cell Pairs" Height="728" Width="808"
+        Title="Remove Cell Pairs" Height="705" Width="842"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
     <Grid Margin="20">
@@ -30,7 +30,8 @@
                          GotFocus="TextBox_GotFocus" 
                          LostFocus="TextBox_LostFocus" 
                          PreviewKeyDown="PasteTextBox_PreviewKeyDown"
-                         ToolTip="Paste pairs from Excel or enter manually. Format: FirstPattern[Tab]SecondPattern"/>
+                         KeyDown="PasteTextBox_KeyDown"
+                         ToolTip="Paste pairs from Excel or enter manually. Format: FirstPattern[Tab]SecondPattern. Press Enter to add."/>
                 <Button x:Name="AddButton" Click="AddButton_Click" Content="Add Pairs" 
                         Style="{StaticResource ModernButton}" Width="100"/>
             </StackPanel>
@@ -95,7 +96,7 @@
         <Border Grid.Row="4" Background="Transparent" Padding="0,10,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="RemoveButton" Click="RemoveButton_Click" Content="Remove Selected" 
-                        Style="{StaticResource DangerButton}" Width="140" Margin="0,0,10,0"/>
+                        Style="{StaticResource DangerButton}" Width="137" Margin="0,0,10,0"/>
                 <Button x:Name="ApplyButton" Click="ApplyButton_Click" Content="Apply Removal" 
                         Style="{StaticResource SuccessButton}" Width="120" Margin="0,0,10,0"/>
                 <Button x:Name="CancelButton" Click="CancelButton_Click" Content="Cancel" 

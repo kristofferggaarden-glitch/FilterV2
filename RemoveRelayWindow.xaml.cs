@@ -9,30 +9,28 @@ namespace FilterV1
 {
     public partial class RemoveRelayWindow : Window
     {
-        private Action<List<RemoveRelayPattern>> _callback;
-        private List<RemoveRelayPattern> _removeRelayPatterns;
+        private Action<List<RemoveRelayPattern>, List<RemoveRelayPattern>> _callback; // First param: all patterns for saving, Second: enabled patterns for processing
+        private List<RemoveRelayPatternViewModel> _removeRelayPatterns;
 
-        public RemoveRelayWindow(List<RemoveRelayPattern> existingPatterns, Action<List<RemoveRelayPattern>> callback)
+        public RemoveRelayWindow(List<RemoveRelayPattern> existingPatterns, Action<List<RemoveRelayPattern>, List<RemoveRelayPattern>> callback)
         {
             InitializeComponent();
             _callback = callback;
 
-            // Create a deep copy of existing patterns
-            _removeRelayPatterns = existingPatterns?.Select(p => new RemoveRelayPattern
+            // Create a deep copy of existing patterns with ViewModel wrappers
+            _removeRelayPatterns = existingPatterns?.Select(p => new RemoveRelayPatternViewModel
             {
-                ContainsText = p?.ContainsText ?? ""
-            }).ToList() ?? new List<RemoveRelayPattern>();
+                ContainsText = p?.ContainsText ?? "",
+                IsEnabled = true // Default to enabled
+            }).ToList() ?? new List<RemoveRelayPatternViewModel>();
 
             RefreshPatternsList();
         }
 
         private void RefreshPatternsList()
         {
-            PatternsListBox.Items.Clear();
-            foreach (var pattern in _removeRelayPatterns.Where(p => p != null))
-            {
-                PatternsListBox.Items.Add($"Remove cells containing: '{pattern.ContainsText}'");
-            }
+            PatternsListBox.ItemsSource = null;
+            PatternsListBox.ItemsSource = _removeRelayPatterns;
         }
 
         private void ContainsTextTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -81,9 +79,10 @@ namespace FilterV1
                     continue; // Skip duplicates
                 }
 
-                _removeRelayPatterns.Add(new RemoveRelayPattern
+                _removeRelayPatterns.Add(new RemoveRelayPatternViewModel
                 {
-                    ContainsText = trimmedLine
+                    ContainsText = trimmedLine,
+                    IsEnabled = true // Default to enabled
                 });
 
                 addedCount++;
@@ -105,6 +104,24 @@ namespace FilterV1
             }
         }
 
+        private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var pattern in _removeRelayPatterns)
+            {
+                pattern.IsEnabled = true;
+            }
+            PatternsListBox.Items.Refresh();
+        }
+
+        private void DeselectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var pattern in _removeRelayPatterns)
+            {
+                pattern.IsEnabled = false;
+            }
+            PatternsListBox.Items.Refresh();
+        }
+
         private void RemovePatternButton_Click(object sender, RoutedEventArgs e)
         {
             if (PatternsListBox.SelectedIndex >= 0)
@@ -122,14 +139,20 @@ namespace FilterV1
 
         private void ApplyRemoveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_removeRelayPatterns.Count == 0)
+            var enabledPatterns = _removeRelayPatterns.Where(p => p.IsEnabled).ToList();
+
+            if (enabledPatterns.Count == 0)
             {
-                MessageBox.Show("Please define at least one text pattern before applying.", "No Patterns Defined",
+                MessageBox.Show("Please enable at least one text pattern before applying.", "No Patterns Enabled",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            _callback?.Invoke(_removeRelayPatterns);
+            // Convert all patterns and enabled patterns to regular model for callback
+            var allPatterns = _removeRelayPatterns.Select(p => new RemoveRelayPattern { ContainsText = p.ContainsText }).ToList();
+            var enabledPatternsOnly = enabledPatterns.Select(p => new RemoveRelayPattern { ContainsText = p.ContainsText }).ToList();
+
+            _callback?.Invoke(allPatterns, enabledPatternsOnly);
             this.Close();
         }
 
@@ -142,5 +165,12 @@ namespace FilterV1
     public class RemoveRelayPattern
     {
         public string ContainsText { get; set; } = "";
+    }
+
+    public class RemoveRelayPatternViewModel
+    {
+        public string ContainsText { get; set; } = "";
+        public bool IsEnabled { get; set; } = true;
+        public string DisplayText => $"Remove cells containing: '{ContainsText}'";
     }
 }

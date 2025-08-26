@@ -26,10 +26,12 @@ namespace FilterV1
         private List<TextFillPattern> _textFillPatterns;
         private List<StarDupesRule> _starDupesRules;
         private List<RemoveRelayPattern> _removeRelayPatterns;
+        private List<ConversionRule> _conversionRules;
         private readonly string _settingsFilePath;
         private readonly string _textFillSettingsFilePath;
         private readonly string _starDupesSettingsFilePath;
         private readonly string _removeRelaySettingsFilePath;
+        private readonly string _conversionRulesSettingsFilePath;
 
         public MainWindow()
         {
@@ -47,12 +49,14 @@ namespace FilterV1
             _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
             _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
+            _conversionRulesSettingsFilePath = Path.Combine(appFolder, "ConversionRulesSettings.json");
 
-            // Load custom groups, text fill patterns, star dupes rules, and remove relay patterns from settings
+            // Load all settings from persistent storage
             LoadCustomGroups();
             LoadTextFillPatterns();
             LoadStarDupesRules();
             LoadRemoveRelayPatterns();
+            LoadConversionRules();
         }
 
         private void LoadCustomGroups()
@@ -195,6 +199,42 @@ namespace FilterV1
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save remove relay settings: {ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void LoadConversionRules()
+        {
+            try
+            {
+                if (File.Exists(_conversionRulesSettingsFilePath))
+                {
+                    string json = File.ReadAllText(_conversionRulesSettingsFilePath);
+                    _conversionRules = JsonSerializer.Deserialize<List<ConversionRule>>(json) ?? new List<ConversionRule>();
+                }
+                else
+                {
+                    _conversionRules = new List<ConversionRule>();
+                    SaveConversionRules();
+                }
+            }
+            catch (Exception)
+            {
+                _conversionRules = new List<ConversionRule>();
+            }
+        }
+
+        private void SaveConversionRules()
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_conversionRules, options);
+                File.WriteAllText(_conversionRulesSettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save conversion rules settings: {ex.Message}", "Save Error",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
@@ -542,6 +582,25 @@ namespace FilterV1
             window.ShowDialog();
         }
 
+        private void ConvertToDurapartButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Status: No file loaded";
+                return;
+            }
+
+            // Open the convert to durapart window with current rules
+            var window = new ConvertToDurapartWindow(_conversionRules, rules =>
+            {
+                _conversionRules = rules;
+                SaveConversionRules(); // Save to persistent storage
+                ApplyConversionRules();
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
         private void ReorganizeCellsButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -601,11 +660,14 @@ namespace FilterV1
             }
 
             // Open the remove relay window with current patterns
-            var window = new RemoveRelayWindow(_removeRelayPatterns, patterns =>
+            var window = new RemoveRelayWindow(_removeRelayPatterns, (allPatterns, enabledPatterns) =>
             {
-                _removeRelayPatterns = patterns;
+                // Save all patterns for persistence, but only process enabled ones
+                _removeRelayPatterns = allPatterns; // Save all patterns for next time
                 SaveRemoveRelayPatterns(); // Save to persistent storage
-                ApplyRemoveRelay();
+
+                // Process only enabled patterns
+                ApplyRemoveRelay(enabledPatterns);
             });
             window.Owner = this;
             window.ShowDialog();
@@ -877,12 +939,15 @@ namespace FilterV1
             UpdateGrid($"Status: Applied star marking to {modifiedCells.Count} duplicate cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
-        private void ApplyRemoveRelay()
+        private void ApplyRemoveRelay(List<RemoveRelayPattern> patternsToApply = null)
         {
             if (_dataTable == null) return;
 
             SaveState();
             var modifiedCells = new List<string>();
+
+            // Use provided patterns or default to all stored patterns
+            var patterns = patternsToApply ?? _removeRelayPatterns;
 
             // Go through all cells in the data table
             foreach (DataRow row in _dataTable.Rows)
@@ -893,7 +958,7 @@ namespace FilterV1
                     if (string.IsNullOrEmpty(cellValue)) continue;
 
                     // Check if this cell contains any of the remove relay patterns
-                    foreach (var pattern in _removeRelayPatterns)
+                    foreach (var pattern in patterns)
                     {
                         if (cellValue.Contains(pattern.ContainsText))
                         {
@@ -915,7 +980,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Status: Removed relay cells and adjacent cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Status: Removed irregular cells and adjacent cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
         private void ApplyReorganizeCells()
@@ -953,6 +1018,38 @@ namespace FilterV1
             }
 
             UpdateGrid($"Status: Reorganized columns (5→2, 6→3, 2→4, 3→5, 4→6) for {reorganizedRows} rows");
+        }
+
+        private void ApplyConversionRules()
+        {
+            if (_dataTable == null) return;
+
+            SaveState();
+            var modifiedCells = new List<string>();
+
+            // Go through all cells in the data table
+            foreach (DataRow row in _dataTable.Rows)
+            {
+                for (int j = 0; j < _dataTable.Columns.Count; j++)
+                {
+                    string cellValue = row[j]?.ToString();
+                    if (string.IsNullOrEmpty(cellValue)) continue;
+
+                    // Check if this cell exactly matches any conversion rule
+                    foreach (var rule in _conversionRules)
+                    {
+                        if (cellValue.Equals(rule.FromText, StringComparison.Ordinal))
+                        {
+                            // Replace with exact match
+                            row[j] = rule.ToText;
+                            modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 1}: '{rule.FromText}' → '{rule.ToText}'");
+                            break; // Only apply first matching rule for this cell
+                        }
+                    }
+                }
+            }
+
+            UpdateGrid($"Status: Converted {modifiedCells.Count} cells to Durapart format: {string.Join(", ", modifiedCells.Take(5))}{(modifiedCells.Count > 5 ? "..." : "")}");
         }
 
         // Helper method to get the priority of text (returns 0 if no priority text found)

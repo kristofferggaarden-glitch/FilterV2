@@ -70,6 +70,14 @@ namespace FilterV1
             }
         }
 
+        private void PasteTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                AddButton_Click(sender, e);
+            }
+        }
+
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
             string pastedText = PasteTextBox.Text.Trim();

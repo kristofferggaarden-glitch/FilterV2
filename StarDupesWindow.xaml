@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.StarDupesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Star Duplicates Settings" Height="870" Width="737"
+        Title="Star Duplicates Settings" Height="702" Width="688"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
     <Grid Margin="20">
@@ -71,16 +71,17 @@
 
                 <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
                     <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="113" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="106" Margin="0,0,0,5" 
+                            FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"
                             ToolTip="Increase priority (higher priority = gets star first)"/>
                     <Button x:Name="MoveDownButton" Content="Move Down" Click="MoveDownButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="112" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="107" Margin="0,0,0,5" 
                             ToolTip="Decrease priority (lower priority = gets star last)"/>
                     <Button x:Name="EditRuleButton" Content="Edit Selected" Click="EditRuleButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="114" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="106" Margin="0,0,0,5" 
                             ToolTip="Edit the selected rule"/>
                     <Button x:Name="RemoveRuleButton" Content="Remove" Click="RemoveRuleButton_Click" 
-                            Style="{StaticResource DangerButton}" Width="112" 
+                            Style="{StaticResource DangerButton}" Width="106" 
                             ToolTip="Remove selected rule"/>
                 </StackPanel>
             </Grid>

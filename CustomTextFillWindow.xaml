@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.CustomTextFillWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Custom Text Fill Settings" Height="887" Width="737"
+        Title="Custom Text Fill Settings" Height="926" Width="802"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
     <Grid Margin="20">
@@ -39,7 +39,7 @@
                          KeyDown="ContainsTextTextBox_KeyDown"/>
 
                 <Button x:Name="AddPatternButton" Grid.Column="2" Content="Add Pattern" 
-                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}" Margin="0,0,-11,0"/>
+                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}" Margin="0,0,-10,0"/>
             </Grid>
         </Border>
 
@@ -82,16 +82,17 @@
 
                 <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
                     <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="114" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="109" Margin="0,0,0,5" 
                             ToolTip="Increase priority (move up in processing order)"/>
                     <Button x:Name="MoveDownButton" Content="Move Down" Click="MoveDownButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="111" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="110" Margin="0,0,0,5" 
                             ToolTip="Decrease priority (move down in processing order)"/>
                     <Button x:Name="EditPatternButton" Content="Edit Selected" Click="EditPatternButton_Click" 
-                            Style="{StaticResource SecondaryButton}" Width="113" Margin="0,0,0,5" 
+                            Style="{StaticResource SecondaryButton}" Width="111" Margin="0,0,0,5" 
+                            FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"
                             ToolTip="Edit the selected pattern"/>
                     <Button x:Name="RemovePatternButton" Content="Remove" Click="RemovePatternButton_Click" 
-                            Style="{StaticResource DangerButton}" Width="112" 
+                            Style="{StaticResource DangerButton}" Width="106" FontWeight="SemiBold"
                             ToolTip="Remove selected pattern"/>
                 </StackPanel>
             </Grid>

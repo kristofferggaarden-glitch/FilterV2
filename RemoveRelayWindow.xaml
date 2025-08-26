@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.RemoveRelayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Remove Relay Settings" Height="671" Width="614"
+        Title="Irregular Removal Settings" Height="667" Width="604"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
     <Grid Margin="20">
@@ -16,7 +16,7 @@
         <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
             <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
                 Define text patterns for removing cells. When a cell contains the specified text, 
-                both that cell and the adjacent cell (to the right) will be removed.
+                both that cell and the adjacent cell (to the right) will be removed. Only checked patterns will be applied.
             </TextBlock>
         </Border>
 
@@ -36,12 +36,12 @@
                          ToolTip="Text pattern to search for (e.g., RELAY)"
                          KeyDown="ContainsTextTextBox_KeyDown"/>
 
-                <Button x:Name="AddPatternButton" Grid.Column="2" Content="Add Pattern" 
-                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}" Margin="0,0,-8,0"/>
+                <Button x:Name="AddPatternButton" Grid.Column="1" Content="Add Pattern" 
+                        Click="AddPatternButton_Click" Style="{StaticResource ModernButton}" Margin="328,0,-11,0" Grid.ColumnSpan="2"/>
             </Grid>
         </Border>
 
-        <!-- Pattern List -->
+        <!-- Pattern List with Checkboxes -->
         <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
             <Grid>
                 <Grid.RowDefinitions>
@@ -57,11 +57,22 @@
                          Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
 
                 <ListBox x:Name="PatternsListBox" Grid.Row="1" Grid.Column="0" 
-                         Margin="0,0,15,0" Style="{StaticResource ModernListBox}"/>
+                         Margin="0,0,15,0" Style="{StaticResource ModernListBox}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayText}" IsChecked="{Binding IsEnabled}" 
+                                    Margin="5" FontSize="13"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
                 <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
+                    <Button x:Name="SelectAllButton" Content="Select All" Click="SelectAllButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="103" Margin="0,0,0,5"/>
+                    <Button x:Name="DeselectAllButton" Content="Deselect All" Click="DeselectAllButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="106" Margin="0,0,0,5"/>
                     <Button x:Name="RemovePatternButton" Content="Remove" Click="RemovePatternButton_Click" 
-                            Style="{StaticResource DangerButton}" Width="100" 
+                            Style="{StaticResource DangerButton}" Width="104" 
                             ToolTip="Remove selected pattern"/>
                 </StackPanel>
             </Grid>
@@ -70,9 +81,9 @@
         <!-- Action Buttons -->
         <Border Grid.Row="3" Background="Transparent" Padding="0,10,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="ApplyRemoveButton" Content="Apply Remove" 
+                <Button x:Name="ApplyRemoveButton" Content="Apply Removal" 
                         Click="ApplyRemoveButton_Click" Style="{StaticResource SuccessButton}"
-                        Width="168" Margin="0,0,10,0"/>
+                        Width="170" Margin="0,0,10,0"/>
                 <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
                         Style="{StaticResource SecondaryButton}" Width="80" IsCancel="True"/>
             </StackPanel>

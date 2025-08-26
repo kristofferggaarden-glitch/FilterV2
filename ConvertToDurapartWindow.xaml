@@ -1,0 +1,121 @@
+﻿<Window x:Class="FilterV1.ConvertToDurapartWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Convert to Durapart Settings" Height="624" Width="700"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Instructions -->
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                Define text conversion rules. When exact text matches are found in any cell, 
+                they will be replaced with the specified replacement text.
+            </TextBlock>
+        </Border>
+
+        <!-- Add Conversion Rule Section -->
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="From:" VerticalAlignment="Center" 
+                         Margin="0,0,10,0" Style="{StaticResource SubtitleText}"/>
+                <TextBox x:Name="FromTextTextBox" Grid.Column="1" Margin="0,0,15,0"
+                         Style="{StaticResource ModernTextBox}"
+                         ToolTip="Original text to find (e.g., UNIBK1.0)"
+                         KeyDown="FromTextTextBox_KeyDown"/>
+
+                <TextBlock Grid.Column="2" Text="To:" VerticalAlignment="Center" 
+                         Margin="0,0,10,0" Style="{StaticResource SubtitleText}"/>
+                <TextBox x:Name="ToTextTextBox" Grid.Column="3" Margin="0,0,15,0"
+                         Style="{StaticResource ModernTextBox}"
+                         ToolTip="Replacement text (e.g., RDXBK1.0)"
+                         KeyDown="ToTextTextBox_KeyDown"/>
+
+                <Button x:Name="AddRuleButton" Grid.Column="4" Content="Add Rule" 
+                        Click="AddRuleButton_Click" Style="{StaticResource ModernButton}" Width="90"/>
+            </Grid>
+        </Border>
+
+        <!-- Conversion Rules List -->
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Conversion Rules" 
+                         Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+
+                <DataGrid x:Name="ConversionRulesGrid" Grid.Row="1" Grid.Column="0" 
+                          Margin="0,0,15,0" Style="{StaticResource ModernDataGrid}"
+                          AutoGenerateColumns="False" 
+                          SelectionMode="Single" 
+                          CanUserAddRows="False" 
+                          CanUserDeleteRows="False"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{StaticResource BorderBrush}"
+                          Background="White">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="From Text" Binding="{Binding FromText}" Width="*" IsReadOnly="True">
+                            <DataGridTextColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.HeaderStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="To Text" Binding="{Binding ToText}" Width="*" IsReadOnly="True">
+                            <DataGridTextColumn.HeaderStyle>
+                                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.HeaderStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
+                    <Button x:Name="EditRuleButton" Content="Edit Selected" Click="EditRuleButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="114" Margin="0,0,0,5" 
+                            ToolTip="Edit the selected rule"/>
+                    <Button x:Name="RemoveRuleButton" Content="Remove" Click="RemoveRuleButton_Click" 
+                            Style="{StaticResource DangerButton}" Width="112" 
+                            ToolTip="Remove selected rule"/>
+                    <Separator Height="10" Background="Transparent"/>
+                    <Button x:Name="AddDefaultsButton" Content="Add Defaults" Click="AddDefaultsButton_Click" 
+                            Style="{StaticResource SecondaryButton}" Width="115" 
+                            ToolTip="Add default UNIBK to RDXBK conversions"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Action Buttons -->
+        <Border Grid.Row="3" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="ApplyConversionButton" Content="Apply Conversion" 
+                        Click="ApplyConversionButton_Click" Style="{StaticResource SuccessButton}"
+                        Width="140" Margin="0,0,10,0"/>
+                <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" 
+                        Style="{StaticResource SecondaryButton}" Width="80" IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

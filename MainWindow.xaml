@@ -83,7 +83,7 @@
                             <Button x:Name="RemoveAllButton" 
                                     Click="RemoveAllButton_Click" 
                                     Style="{StaticResource ModernButton}"
-                                    Width="204"
+                                    Width="215"
                                     Height="40"
                                     Margin="0,0,10,10">
                                 <StackPanel Orientation="Horizontal">
@@ -107,7 +107,7 @@
                             <Button x:Name="RemoveRisingNumbersButton" 
                                     Click="RemoveRisingNumbersButton_Click" 
                                     Style="{StaticResource ModernButton}"
-                                    Width="217"
+                                    Width="215"
                                     Height="40"
                                     Margin="0,0,10,10">
                                 <StackPanel Orientation="Horizontal">
@@ -131,7 +131,7 @@
                             <Button x:Name="RemoveRelayButton" 
                                     Click="RemoveRelayButton_Click" 
                                     Style="{StaticResource ModernButton}"
-                                    Width="208"
+                                    Width="192"
                                     Height="40"
                                     Margin="0,0,10,10">
                                 <StackPanel Orientation="Horizontal">
@@ -195,6 +195,19 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🔄" FontSize="16" Margin="0,0,8,0"/>
                                     <TextBlock Text="Reorganize Cells" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button x:Name="ConvertToDurapartButton" 
+                                    Click="ConvertToDurapartButton_Click" 
+                                    Style="{StaticResource SecondaryButton}"
+                                    Width="191"
+                                    Height="40"
+                                    Margin="0,0,10,10"
+                                    ToolTip="Convert text patterns to Durapart format">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔀" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Convert to Durapart" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
