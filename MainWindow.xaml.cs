@@ -464,38 +464,51 @@ namespace FilterV1
             }
 
             SaveState();
+            var clearedCells = new List<string>();
+
             foreach (DataRow row in _dataTable.Rows)
             {
-                for (int j = 0; j < _dataTable.Columns.Count - 1; j++)
-                {
-                    string leftCell = row[j]?.ToString();
-                    string rightCell = row[j + 1]?.ToString();
-                    if (string.IsNullOrEmpty(leftCell) || string.IsNullOrEmpty(rightCell))
-                        continue;
+                // Sjekk for stigende tall mellom kolonne 5 og 6 (begge retninger)
+                string col5Value = row[4]?.ToString();
+                string col6Value = row[5]?.ToString();
 
-                    var matchLeft = Regex.Match(leftCell, @"^(.*):(\d+)$");
-                    var matchRight = Regex.Match(rightCell, @"^(.*):(\d+)$");
-                    if (matchLeft.Success && matchRight.Success)
+                if (!string.IsNullOrEmpty(col5Value) && !string.IsNullOrEmpty(col6Value))
+                {
+                    var match5 = Regex.Match(col5Value, @"^(.*):(\d+)$");
+                    var match6 = Regex.Match(col6Value, @"^(.*):(\d+)$");
+
+                    if (match5.Success && match6.Success)
                     {
-                        string leftPrefix = matchLeft.Groups[1].Value;
-                        string rightPrefix = matchRight.Groups[1].Value;
-                        if (leftPrefix == rightPrefix)
+                        string prefix5 = match5.Groups[1].Value;
+                        string prefix6 = match6.Groups[1].Value;
+
+                        if (prefix5 == prefix6)
                         {
-                            if (int.TryParse(matchLeft.Groups[2].Value, out int leftNumber) &&
-                                int.TryParse(matchRight.Groups[2].Value, out int rightNumber))
+                            if (int.TryParse(match5.Groups[2].Value, out int number5) &&
+                                int.TryParse(match6.Groups[2].Value, out int number6))
                             {
-                                if (rightNumber == leftNumber + 1)
+                                // Sjekk stigende fra kol 5 til kol 6 (original)
+                                if (number6 == number5 + 1)
                                 {
-                                    row[j] = string.Empty;
-                                    row[j + 1] = string.Empty;
+                                    row[4] = string.Empty; // Kolonne 5
+                                    row[5] = string.Empty; // Kolonne 6
+                                    clearedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}: {col5Value} → {col6Value}");
+                                }
+                                // NY LOGIKK: Sjekk også stigende fra kol 6 til kol 5
+                                else if (number5 == number6 + 1)
+                                {
+                                    row[4] = string.Empty; // Kolonne 5
+                                    row[5] = string.Empty; // Kolonne 6
+                                    clearedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}: {col6Value} → {col5Value}");
                                 }
                             }
                         }
                     }
                 }
             }
+
             MoveCellsUpward();
-            UpdateGrid("Status: Rising number pairs cleared");
+            UpdateGrid($"Status: Rising number pairs cleared (both directions): {string.Join(", ", clearedCells.Take(5))}{(clearedCells.Count > 5 ? "..." : "")}");
         }
 
         private void RemoveDefinedCellsButton_Click(object sender, RoutedEventArgs e)
@@ -515,10 +528,16 @@ namespace FilterV1
 
                         foreach (var pair in pairs)
                         {
-                            // FIXED: Use Contains instead of exact match
-                            if (!string.IsNullOrEmpty(pair.FirstCell) && !string.IsNullOrEmpty(pair.SecondCell) &&
-                                col5Value.Contains(pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
-                                col6Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase))
+                            if (string.IsNullOrEmpty(pair.FirstCell) || string.IsNullOrEmpty(pair.SecondCell))
+                                continue;
+
+                            // FORBEDRET LOGIKK: Sjekk begge kombinasjoner i samme rad
+                            bool pattern1Match = (col5Value.Contains(pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
+                                                col6Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase)) ||
+                                               (col5Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase) &&
+                                                col6Value.Contains(pair.FirstCell, StringComparison.OrdinalIgnoreCase));
+
+                            if (pattern1Match)
                             {
                                 matchedRows.Add(i + 1);
                                 _dataTable.Rows.RemoveAt(i);
@@ -527,7 +546,7 @@ namespace FilterV1
                         }
                     }
                     MoveCellsUpward();
-                    UpdateGrid($"Status: Removed rows with cells containing patterns in columns 5-6: {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
+                    UpdateGrid($"Status: Removed rows with matching patterns in same row (cols 5-6): {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
                 }
                 else
                 {
