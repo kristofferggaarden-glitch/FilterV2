@@ -267,7 +267,7 @@ namespace FilterV1
             if (openFileDialog.ShowDialog() == true)
             {
                 _filePath = openFileDialog.FileName;
-                FilePathText.Text = _filePath;
+                FilePathText.Text = Path.GetFileName(_filePath);
                 _undoStack.Clear();
                 _rowsRemoved = 0;
                 _removeEqualsApplied = false;
@@ -300,20 +300,27 @@ namespace FilterV1
                         _dataTable.Rows.Add(dataRow);
                     }
 
+                    UpdateGrid($"Fil lastet successfully. Total rader: {_dataTable.Rows.Count}");
+
+                    // Show DataGrid and hide empty state
+                    EmptyState.Visibility = Visibility.Collapsed;
+                    ExcelDataGrid.Visibility = Visibility.Visible;
                     ExcelDataGrid.ItemsSource = _dataTable.DefaultView;
-                    UpdateGrid($"Status: File loaded successfully. Total rows: {_dataTable.Rows.Count}");
                 }
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Status: Error loading file - {ex.Message}";
+                StatusText.Text = $"Feil ved lasting av fil - {ex.Message}";
             }
         }
 
         private void SaveState()
         {
-            DataTable clone = _dataTable.Copy();
-            _undoStack.Push(clone);
+            if (_dataTable != null)
+            {
+                DataTable clone = _dataTable.Copy();
+                _undoStack.Push(clone);
+            }
         }
 
         private void MoveCellsUpward()
@@ -364,15 +371,27 @@ namespace FilterV1
         private void UpdateGrid(string statusMessage)
         {
             ExcelDataGrid.ItemsSource = null;
-            ExcelDataGrid.ItemsSource = _dataTable.DefaultView;
-            StatusText.Text = $"{statusMessage} (Rows removed: {_rowsRemoved}, Total rows: {_dataTable.Rows.Count})";
+            ExcelDataGrid.ItemsSource = _dataTable?.DefaultView;
+            StatusText.Text = $"{statusMessage} (Fjernet rader: {_rowsRemoved}, Total rader: {_dataTable?.Rows.Count ?? 0})";
+            RowCountText.Text = $"{_dataTable?.Rows.Count ?? 0} rader";
+
+            if (_dataTable != null && _dataTable.Rows.Count > 0)
+            {
+                EmptyState.Visibility = Visibility.Collapsed;
+                ExcelDataGrid.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                EmptyState.Visibility = Visibility.Visible;
+                ExcelDataGrid.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void RemoveAllButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -452,14 +471,14 @@ namespace FilterV1
             MoveCellsUpward();
             _removeEqualsApplied = true;
             _removeLVApplied = true;
-            UpdateGrid("Status: Removed =, +LV, MX, and XS from cells");
+            UpdateGrid("Fjernet =, +LV, MX, og XS fra celler");
         }
 
         private void RemoveRisingNumbersButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -492,14 +511,14 @@ namespace FilterV1
                                 {
                                     row[4] = string.Empty; // Kolonne 5
                                     row[5] = string.Empty; // Kolonne 6
-                                    clearedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}: {col5Value} → {col6Value}");
+                                    clearedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}: {col5Value} → {col6Value}");
                                 }
                                 // NY LOGIKK: Sjekk også stigende fra kol 6 til kol 5
                                 else if (number5 == number6 + 1)
                                 {
                                     row[4] = string.Empty; // Kolonne 5
                                     row[5] = string.Empty; // Kolonne 6
-                                    clearedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}: {col6Value} → {col5Value}");
+                                    clearedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}: {col6Value} → {col5Value}");
                                 }
                             }
                         }
@@ -508,7 +527,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Status: Rising number pairs cleared (both directions): {string.Join(", ", clearedCells.Take(5))}{(clearedCells.Count > 5 ? "..." : "")}");
+            UpdateGrid($"Stigende tall fjernet (begge retninger): {string.Join(", ", clearedCells.Take(5))}{(clearedCells.Count > 5 ? "..." : "")}");
         }
 
         private void RemoveDefinedCellsButton_Click(object sender, RoutedEventArgs e)
@@ -546,11 +565,11 @@ namespace FilterV1
                         }
                     }
                     MoveCellsUpward();
-                    UpdateGrid($"Status: Removed rows with matching patterns in same row (cols 5-6): {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
+                    UpdateGrid($"Fjernet rader med matchende mønstre i samme rad (kol 5-6): {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
                 }
                 else
                 {
-                    UpdateGrid("Status: No file loaded, pairs defined but not applied");
+                    UpdateGrid("Ingen fil lastet, mønstre definert men ikke anvendt");
                 }
             });
             window.Show();
@@ -560,7 +579,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -579,14 +598,14 @@ namespace FilterV1
                 }
             }
             MoveCellsUpward();
-            UpdateGrid("Status: Duplicate adjacent cells cleared");
+            UpdateGrid("Duplikat tilstøtende celler fjernet");
         }
 
         private void SortButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -605,7 +624,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -624,7 +643,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -636,7 +655,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -655,7 +674,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -674,7 +693,7 @@ namespace FilterV1
         {
             if (_dataTable == null)
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -722,7 +741,7 @@ namespace FilterV1
                 }
             }
 
-            UpdateGrid($"Status: Applied text fill to columns 2-4 in rows: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
+            UpdateGrid($"Anvendt tekst utfylling til kolonne 2-4 i rader: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
         }
 
         private (string col2, string col3, string col4) GetOptionValues(int option)
@@ -881,7 +900,7 @@ namespace FilterV1
 
             var activeGroups = groupedRows.Select(g => g.Group.ContainsText).ToList();
             string groupSummary = string.Join(", ", activeGroups);
-            UpdateGrid($"Status: Data sorted with priority text moved to left. Groups: {groupSummary}");
+            UpdateGrid($"Data sortert med prioritet tekst flyttet til venstre. Grupper: {groupSummary}");
         }
 
         private void ApplyStarDupes()
@@ -951,11 +970,11 @@ namespace FilterV1
                 if (bestLocation.HasValue)
                 {
                     _dataTable.Rows[bestLocation.Value.rowIndex][bestLocation.Value.colIndex] = duplicateValue + "*";
-                    modifiedCells.Add($"Row {bestLocation.Value.rowIndex + 1}, Column {bestLocation.Value.colIndex + 1}");
+                    modifiedCells.Add($"Rad {bestLocation.Value.rowIndex + 1}, Kolonne {bestLocation.Value.colIndex + 1}");
                 }
             }
 
-            UpdateGrid($"Status: Applied star marking to {modifiedCells.Count} duplicate cells: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Anvendt stjerne markering til {modifiedCells.Count} duplikat celler: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
         private void ApplyRemoveRelay(List<RemoveRelayPattern> patternsToApply = null)
@@ -982,21 +1001,21 @@ namespace FilterV1
                         if (cellValue.Contains(pattern.ContainsText))
                         {
                             // Remove this cell
-                            modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 1}");
+                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}");
                             row[j] = string.Empty;
 
                             // Remove adjacent cell to the LEFT if it exists
                             if (j > 0)
                             {
                                 row[j - 1] = string.Empty;
-                                modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j}");
+                                modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j}");
                             }
 
                             // Remove adjacent cell to the RIGHT if it exists
                             if (j < _dataTable.Columns.Count - 1)
                             {
                                 row[j + 1] = string.Empty;
-                                modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 2}");
+                                modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 2}");
                             }
 
                             break; // Only apply first matching pattern for this cell
@@ -1006,7 +1025,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Status: Removed irregular cells and adjacent cells (both sides): {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Fjernet irregulære celler og tilstøtende celler (begge sider): {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
         }
 
         private void ApplyReorganizeCells()
@@ -1019,7 +1038,7 @@ namespace FilterV1
             // Check if we have enough columns (at least 6 columns needed for reorganization)
             if (_dataTable.Columns.Count < 6)
             {
-                UpdateGrid("Status: Need at least 6 columns for reorganization");
+                UpdateGrid("Trenger minst 6 kolonner for reorganisering");
                 return;
             }
 
@@ -1043,7 +1062,7 @@ namespace FilterV1
                 reorganizedRows++;
             }
 
-            UpdateGrid($"Status: Reorganized columns (5→2, 6→3, 2→4, 3→5, 4→6) for {reorganizedRows} rows");
+            UpdateGrid($"Reorganisert kolonner (5→2, 6→3, 2→4, 3→5, 4→6) for {reorganizedRows} rader");
         }
 
         private void ApplyConversionRules()
@@ -1068,14 +1087,14 @@ namespace FilterV1
                         {
                             // Replace with exact match
                             row[j] = rule.ToText;
-                            modifiedCells.Add($"Row {_dataTable.Rows.IndexOf(row) + 1}, Col {j + 1}: '{rule.FromText}' → '{rule.ToText}'");
+                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}: '{rule.FromText}' → '{rule.ToText}'");
                             break; // Only apply first matching rule for this cell
                         }
                     }
                 }
             }
 
-            UpdateGrid($"Status: Converted {modifiedCells.Count} cells to Durapart format: {string.Join(", ", modifiedCells.Take(5))}{(modifiedCells.Count > 5 ? "..." : "")}");
+            UpdateGrid($"Konvertert {modifiedCells.Count} celler til Durapart format: {string.Join(", ", modifiedCells.Take(5))}{(modifiedCells.Count > 5 ? "..." : "")}");
         }
 
         // Helper method to get the priority of text (returns 0 if no priority text found)
@@ -1097,22 +1116,22 @@ namespace FilterV1
         {
             if (_undoStack.Count == 0)
             {
-                StatusText.Text = "Status: No actions to undo";
+                StatusText.Text = "Ingen handlinger å angre";
                 return;
             }
 
             _dataTable = _undoStack.Pop();
-            _rowsRemoved = Math.Max(0, _rowsRemoved - (_dataTable.Rows.Count - _undoStack.Count));
+            _rowsRemoved = Math.Max(0, _rowsRemoved - (_dataTable?.Rows.Count ?? 0));
             _removeEqualsApplied = _undoStack.Any() && _undoStack.Peek().Rows.Cast<DataRow>().Any(r => r.ItemArray.Any(v => v?.ToString().Contains("=") == false));
             _removeLVApplied = _undoStack.Any() && _undoStack.Peek().Rows.Cast<DataRow>().Any(r => r.ItemArray.Any(v => v?.ToString().Contains("+LV") == false));
-            UpdateGrid("Status: Last action undone");
+            UpdateGrid("Siste handling angret");
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null || string.IsNullOrEmpty(_filePath))
             {
-                StatusText.Text = "Status: No file loaded";
+                StatusText.Text = "Ingen fil lastet";
                 return;
             }
 
@@ -1149,12 +1168,12 @@ namespace FilterV1
                     }
 
                     workbook.SaveAs(_filePath);
-                    StatusText.Text = "Status: File overwritten successfully with colors";
+                    StatusText.Text = "Fil overskrevet med farger";
                 }
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Status: Error saving file - {ex.Message}";
+                StatusText.Text = $"Feil ved lagring av fil - {ex.Message}";
             }
         }
     }
@@ -1166,7 +1185,7 @@ namespace FilterV1
             if (value is string colorIndexStr && int.TryParse(colorIndexStr, out int colorIndex))
             {
                 // Alternate colors: odd groups = green, even groups = pink
-                return (colorIndex % 2 == 1) ? Brushes.LightGreen : Brushes.LightPink;
+                return (colorIndex % 2 == 1) ? new SolidColorBrush(Color.FromArgb(51, 76, 175, 80)) : new SolidColorBrush(Color.FromArgb(51, 233, 30, 99));
             }
             return Brushes.Transparent;
         }
