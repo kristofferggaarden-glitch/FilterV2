@@ -33,6 +33,11 @@ namespace FilterV1
         private readonly string _removeRelaySettingsFilePath;
         private readonly string _conversionRulesSettingsFilePath;
 
+        // Added for rising numbers exceptions and custom cross‑section handling
+        private List<string> _risingNumberExceptions = new List<string>();
+        private List<CustomCrossSectionWindow.CrossRow> _customCrossRows = new List<CustomCrossSectionWindow.CrossRow>();
+        private HashSet<int> _rowsWithCustomCross = new HashSet<int>();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -481,44 +486,64 @@ namespace FilterV1
                 StatusText.Text = "Ingen fil lastet";
                 return;
             }
+            // Open the rising numbers options window to allow the user to specify exceptions.
+            // Any exception strings returned will be used to skip rows where column 5 or 6 contains the exception.
+            var optsWin = new RisingNumbersOptionsWindow(_risingNumberExceptions, ex =>
+            {
+                _risingNumberExceptions = ex ?? new List<string>();
+            });
+            optsWin.Owner = this;
+            optsWin.ShowDialog();
 
             SaveState();
             var clearedCells = new List<string>();
-
-            foreach (DataRow row in _dataTable.Rows)
+            for (int ri = 0; ri < _dataTable.Rows.Count; ri++)
             {
-                // Sjekk for stigende tall mellom kolonne 5 og 6 (begge retninger)
+                DataRow row = _dataTable.Rows[ri];
                 string col5Value = row[4]?.ToString();
                 string col6Value = row[5]?.ToString();
+
+                // If either column contains an exception string (case‑insensitive), skip this row.
+                bool skip = false;
+                if (_risingNumberExceptions != null && _risingNumberExceptions.Any())
+                {
+                    foreach (string ex in _risingNumberExceptions)
+                    {
+                        if (string.IsNullOrWhiteSpace(ex)) continue;
+                        if ((!string.IsNullOrEmpty(col5Value) && col5Value.IndexOf(ex, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (!string.IsNullOrEmpty(col6Value) && col6Value.IndexOf(ex, StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            skip = true;
+                            break;
+                        }
+                    }
+                }
+                if (skip) continue;
 
                 if (!string.IsNullOrEmpty(col5Value) && !string.IsNullOrEmpty(col6Value))
                 {
                     var match5 = Regex.Match(col5Value, @"^(.*):(\d+)$");
                     var match6 = Regex.Match(col6Value, @"^(.*):(\d+)$");
-
                     if (match5.Success && match6.Success)
                     {
                         string prefix5 = match5.Groups[1].Value;
                         string prefix6 = match6.Groups[1].Value;
-
                         if (prefix5 == prefix6)
                         {
-                            if (int.TryParse(match5.Groups[2].Value, out int number5) &&
-                                int.TryParse(match6.Groups[2].Value, out int number6))
+                            if (int.TryParse(match5.Groups[2].Value, out int number5) && int.TryParse(match6.Groups[2].Value, out int number6))
                             {
-                                // Sjekk stigende fra kol 5 til kol 6 (original)
+                                // Check both directions for rising numbers
                                 if (number6 == number5 + 1)
                                 {
-                                    row[4] = string.Empty; // Kolonne 5
-                                    row[5] = string.Empty; // Kolonne 6
-                                    clearedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}: {col5Value} → {col6Value}");
+                                    row[4] = string.Empty;
+                                    row[5] = string.Empty;
+                                    clearedCells.Add($"Rad {ri + 1}: {col5Value} → {col6Value}");
                                 }
-                                // NY LOGIKK: Sjekk også stigende fra kol 6 til kol 5
                                 else if (number5 == number6 + 1)
                                 {
-                                    row[4] = string.Empty; // Kolonne 5
-                                    row[5] = string.Empty; // Kolonne 6
-                                    clearedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}: {col6Value} → {col5Value}");
+                                    row[4] = string.Empty;
+                                    row[5] = string.Empty;
+                                    clearedCells.Add($"Rad {ri + 1}: {col6Value} → {col5Value}");
                                 }
                             }
                         }
@@ -620,6 +645,83 @@ namespace FilterV1
             window.ShowDialog();
         }
 
+        /// <summary>
+        /// Opens the custom cross‑section window for defining per‑row tverrsnitt assignments.
+        /// After the dialog is closed, applies the definitions to the current data table.
+        /// </summary>
+        private void CustomCrossSectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Ingen fil lastet";
+                return;
+            }
+
+            var win = new CustomCrossSectionWindow(_customCrossRows, rows =>
+            {
+                _customCrossRows = rows ?? new List<CustomCrossSectionWindow.CrossRow>();
+                ApplyCustomCrossSections();
+            });
+            win.Owner = this;
+            win.ShowDialog();
+        }
+
+        /// <summary>
+        /// Applies the custom cross‑section definitions stored in _customCrossRows to the
+        /// current DataTable. For each row in the table, if the values in columns 5 and 6
+        /// match a defined pattern, the tverrsnitt option is applied to columns 2–4.
+        /// Rows that receive a custom tverrsnitt are recorded in _rowsWithCustomCross
+        /// so that standard tverrsnitt rules will not overwrite them.
+        /// </summary>
+        private void ApplyCustomCrossSections()
+        {
+            if (_dataTable == null) return;
+
+            SaveState();
+            _rowsWithCustomCross.Clear();
+
+            for (int i = 0; i < _dataTable.Rows.Count; i++)
+            {
+                DataRow row = _dataTable.Rows[i];
+                string col5 = row[4]?.ToString() ?? string.Empty;
+                string col6 = row[5]?.ToString() ?? string.Empty;
+
+                foreach (var def in _customCrossRows)
+                {
+                    if (def == null) continue;
+                    bool match5 = string.IsNullOrWhiteSpace(def.Col5Text) || (!string.IsNullOrWhiteSpace(col5) && col5.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0);
+                    bool match6 = string.IsNullOrWhiteSpace(def.Col6Text) || (!string.IsNullOrWhiteSpace(col6) && col6.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (match5 && match6)
+                    {
+                        var (c2, c3, c4) = MapCrossOption(def.SelectedOption);
+                        row[1] = c2;
+                        row[2] = c3;
+                        row[3] = c4;
+                        _rowsWithCustomCross.Add(i);
+                        break; // Only first match applies
+                    }
+                }
+            }
+
+            UpdateGrid("Egendefinert tverrsnitt anvendt");
+        }
+
+        /// <summary>
+        /// Maps a cross option index to the three corresponding tverrsnitt values for columns 2, 3, and 4.
+        /// </summary>
+        /// <param name="option">Option index (1–4)</param>
+        /// <returns>Tuple of (col2, col3, col4) strings</returns>
+        private (string c2, string c3, string c4) MapCrossOption(int option)
+        {
+            switch (option)
+            {
+                case 2: return ("UNIBK1.5", "HYLSE 1.5", "HYLSE 1.5");
+                case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
+                case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
+                default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
+            }
+        }
+
         private void ConvertToDurapartButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -718,25 +820,29 @@ namespace FilterV1
             SaveState();
             var modifiedRows = new List<int>();
 
-            foreach (DataRow row in _dataTable.Rows)
+            for (int i = 0; i < _dataTable.Rows.Count; i++)
             {
-                string col5Value = row[4]?.ToString()?.Trim() ?? "";
-                string col6Value = row[5]?.ToString()?.Trim() ?? "";
+                // Skip rows that have been assigned a custom cross‑section
+                if (_rowsWithCustomCross.Contains(i))
+                    continue;
 
-                // Check both columns 5 and 6 for matching patterns in priority order
+                DataRow row = _dataTable.Rows[i];
+                string col5Value = row[4]?.ToString()?.Trim() ?? string.Empty;
+                string col6Value = row[5]?.ToString()?.Trim() ?? string.Empty;
+
                 foreach (var pattern in _textFillPatterns.OrderBy(p => p.Priority))
                 {
-                    if (col5Value.Contains(pattern.ContainsText) || col6Value.Contains(pattern.ContainsText))
+                    if (!string.IsNullOrEmpty(pattern.ContainsText) &&
+                        ((col5Value.IndexOf(pattern.ContainsText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                         (col6Value.IndexOf(pattern.ContainsText, StringComparison.OrdinalIgnoreCase) >= 0)))
                     {
-                        int rowIndex = _dataTable.Rows.IndexOf(row) + 1;
+                        int rowIndex = i + 1;
                         var (col2, col3, col4) = GetOptionValues(pattern.SelectedOption);
-
-                        row[1] = col2; // Column 2
-                        row[2] = col3; // Column 3
-                        row[3] = col4; // Column 4
-
+                        row[1] = col2;
+                        row[2] = col3;
+                        row[3] = col4;
                         modifiedRows.Add(rowIndex);
-                        break; // Only apply the first matching pattern (highest priority)
+                        break; // apply only first matching pattern
                     }
                 }
             }
@@ -1185,7 +1291,9 @@ namespace FilterV1
             if (value is string colorIndexStr && int.TryParse(colorIndexStr, out int colorIndex))
             {
                 // Alternate colors: odd groups = green, even groups = pink
-                return (colorIndex % 2 == 1) ? new SolidColorBrush(Color.FromArgb(51, 76, 175, 80)) : new SolidColorBrush(Color.FromArgb(51, 233, 30, 99));
+                return (colorIndex % 2 == 1)
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(51, 76, 175, 80))
+                    : new SolidColorBrush(System.Windows.Media.Color.FromArgb(51, 233, 30, 99));
             }
             return Brushes.Transparent;
         }

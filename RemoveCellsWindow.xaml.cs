@@ -125,11 +125,7 @@ namespace FilterV1
                 PasteTextBox.Text = string.Empty;
                 PasteTextBox.Focus();
 
-                if (addedCount > 1)
-                {
-                    MessageBox.Show($"Added {addedCount} pattern pairs successfully.", "Multiple Pairs Added",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+                // Suppress informational dialog when adding multiple pairs
             }
             else
             {
@@ -188,11 +184,7 @@ namespace FilterV1
                     PasteTextBox.Text = string.Empty;
                     PasteTextBox.Focus();
 
-                    if (newPairs.Count > 1)
-                    {
-                        MessageBox.Show($"Added {newPairs.Count} pattern pairs successfully.", "Multiple Pairs Added",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    // Suppress informational dialog when adding multiple pairs
                 }
 
                 e.Handled = true;

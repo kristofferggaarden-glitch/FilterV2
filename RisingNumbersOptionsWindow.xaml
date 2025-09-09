@@ -1,0 +1,40 @@
+﻿<Window x:Class="FilterV1.RisingNumbersOptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Stigende tall – Unntak" Height="450" Width="500"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Instructions -->
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Padding="15" Margin="0,0,0,10">
+            <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}" Text="Angi unntak for stigende tall. Rader som inneholder unntaket i kolonne 5 eller 6 vil ikke bli fjernet. Merk av for å aktivere."/>
+        </Border>
+        <!-- Exception list and controls -->
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Padding="15" Margin="0,0,0,10">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBox x:Name="NewExceptionTextBox" Width="300" Style="{StaticResource ModernTextBox}"
+                             Margin="0,0,10,0" ToolTip="Legg til nytt unntak"/>
+                    <Button Content="Legg til" Width="80" Click="AddExceptionButton_Click" Style="{StaticResource ModernButton}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Velg alle" Width="80" Click="SelectAllButton_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                    <Button Content="Fjern alle" Width="80" Click="DeselectAllButton_Click" Style="{StaticResource SecondaryButton}"/>
+                </StackPanel>
+                <ListBox x:Name="ExceptionsListBox" BorderThickness="0" Background="Transparent"/>
+            </StackPanel>
+        </Border>
+        <!-- Action buttons -->
+        <Border Grid.Row="2" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="OK" Width="80" Click="OkButton_Click" Style="{StaticResource SuccessButton}" Margin="0,0,10,0"/>
+                <Button Content="Avbryt" Width="80" Click="CancelButton_Click" Style="{StaticResource SecondaryButton}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

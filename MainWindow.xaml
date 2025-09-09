@@ -326,6 +326,8 @@
 
                         <Grid>
                             <Grid.RowDefinitions>
+                                <!-- Updated row definitions: 4 auto rows to accommodate custom cross section button -->
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -346,7 +348,7 @@
                                     Click="CustomTextFillButton_Click" 
                                     Style="{StaticResource GlassButton}"
                                     Grid.Row="0" Grid.Column="1"
-                                    Content="&#xD;&#xA;Tverrsnitt&#xD;&#xA;"
+                                    Content="Standard tverrsnitt"
                                     Margin="5,0,0,10"/>
 
                             <Button x:Name="StarDupesButton" 
@@ -376,6 +378,14 @@
                                     Grid.Row="2" Grid.Column="1"
                                     Content="🔀 Konverter til &#xD;&#xA;Durapart"
                                     Margin="5,0,0,0"/>
+
+                            <!-- Ny knapp: Egendefinert tverrsnitt -->
+                            <Button x:Name="CustomCrossSectionButton"
+                                    Click="CustomCrossSectionButton_Click"
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="3" Grid.Column="0"
+                                    Content="Egendefinert tverrsnitt"
+                                    Margin="0,10,5,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
