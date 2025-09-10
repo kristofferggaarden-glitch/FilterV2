@@ -16,6 +16,10 @@ namespace FilterV1
 {
     public partial class MainWindow : Window
     {
+        // Reference to the custom cross-section window. Opening it modelessly allows the user
+        // to copy data from the data preview while the window is open. Only one instance is
+        // maintained at a time.
+        private CustomCrossSectionWindow _customCrossWindow;
         private string _filePath;
         private DataTable _dataTable;
         private Stack<DataTable> _undoStack;
@@ -32,6 +36,8 @@ namespace FilterV1
         private readonly string _starDupesSettingsFilePath;
         private readonly string _removeRelaySettingsFilePath;
         private readonly string _conversionRulesSettingsFilePath;
+        // File path for storing the rising numbers exception list. Persisted between sessions.
+        private readonly string _risingExceptionsFilePath;
 
         // Added for rising numbers exceptions and custom cross‑section handling
         private List<string> _risingNumberExceptions = new List<string>();
@@ -41,6 +47,7 @@ namespace FilterV1
         public MainWindow()
         {
             InitializeComponent();
+
             _undoStack = new Stack<DataTable>();
             _rowsRemoved = 0;
             _removeEqualsApplied = false;
@@ -55,6 +62,15 @@ namespace FilterV1
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
             _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
             _conversionRulesSettingsFilePath = Path.Combine(appFolder, "ConversionRulesSettings.json");
+
+            // Set up the file path for rising number exceptions.  This list will be loaded
+            // during startup and saved whenever the user modifies it via the options window.
+            _risingExceptionsFilePath = Path.Combine(appFolder, "RisingExceptions.json");
+
+            // After all file paths are set, load previously saved exceptions for the rising numbers removal.
+            // This ensures that user-defined exceptions persist across sessions.  The file path
+            // must be initialized before calling this method.
+            LoadRisingExceptions();
 
             // Load all settings from persistent storage
             LoadCustomGroups();
@@ -490,10 +506,14 @@ namespace FilterV1
             // Any exception strings returned will be used to skip rows where column 5 or 6 contains the exception.
             var optsWin = new RisingNumbersOptionsWindow(_risingNumberExceptions, ex =>
             {
+                // Update the exception list with the selection from the dialog. Use an empty
+                // list instead of null to avoid null reference checks later.
                 _risingNumberExceptions = ex ?? new List<string>();
             });
             optsWin.Owner = this;
             optsWin.ShowDialog();
+            // Persist the current exception list to disk so it is remembered between sessions.
+            SaveRisingExceptions();
 
             SaveState();
             var clearedCells = new List<string>();
@@ -649,6 +669,11 @@ namespace FilterV1
         /// Opens the custom cross‑section window for defining per‑row tverrsnitt assignments.
         /// After the dialog is closed, applies the definitions to the current data table.
         /// </summary>
+        /// <summary>
+        /// Opens the custom cross section window. Before opening, attempts to parse the current clipboard contents into
+        /// a list of cross rows if the clipboard contains tabular text (e.g. copied from Excel or the app's DataGrid).
+        /// The parsed rows will seed the window so the user can immediately apply tverrsnitt options without manually pasting.
+        /// </summary>
         private void CustomCrossSectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -656,14 +681,25 @@ namespace FilterV1
                 StatusText.Text = "Ingen fil lastet";
                 return;
             }
-
-            var win = new CustomCrossSectionWindow(_customCrossRows, rows =>
+            // If the custom cross‑section window is already open, just bring it to the front.
+            if (_customCrossWindow != null && _customCrossWindow.IsLoaded)
             {
-                _customCrossRows = rows ?? new List<CustomCrossSectionWindow.CrossRow>();
+                _customCrossWindow.Activate();
+                return;
+            }
+
+            // Create and show a modeless custom cross‑section window.  This allows the user to
+            // interact with the main window (for example, to copy values from the data preview)
+            // while defining custom mappings.  When the window closes, the reference is cleared
+            // and the custom mappings are applied.
+            _customCrossWindow = new CustomCrossSectionWindow(_customCrossRows, rows =>
+            {
+                _customCrossRows = rows ?? new System.Collections.Generic.List<CustomCrossSectionWindow.CrossRow>();
                 ApplyCustomCrossSections();
             });
-            win.Owner = this;
-            win.ShowDialog();
+            _customCrossWindow.Owner = this;
+            _customCrossWindow.Closed += (_, __) => _customCrossWindow = null;
+            _customCrossWindow.Show();
         }
 
         /// <summary>
@@ -689,21 +725,30 @@ namespace FilterV1
                 foreach (var def in _customCrossRows)
                 {
                     if (def == null) continue;
-                    bool match5 = string.IsNullOrWhiteSpace(def.Col5Text) || (!string.IsNullOrWhiteSpace(col5) && col5.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0);
-                    bool match6 = string.IsNullOrWhiteSpace(def.Col6Text) || (!string.IsNullOrWhiteSpace(col6) && col6.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0);
-                    if (match5 && match6)
+                    bool has5 = !string.IsNullOrWhiteSpace(def.Col5Text);
+                    bool has6 = !string.IsNullOrWhiteSpace(def.Col6Text);
+
+                    // Direct order: match col5→def.Col5Text and col6→def.Col6Text if specified
+                    bool matchDirect = (!has5 || (col5.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                                       (!has6 || (col6.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0));
+
+                    // Swapped order: match col6→def.Col5Text and col5→def.Col6Text if specified
+                    bool matchSwapped = (!has5 || (col6.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0)) &&
+                                        (!has6 || (col5.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0));
+
+                    if (matchDirect || matchSwapped)
                     {
                         var (c2, c3, c4) = MapCrossOption(def.SelectedOption);
                         row[1] = c2;
                         row[2] = c3;
                         row[3] = c4;
                         _rowsWithCustomCross.Add(i);
-                        break; // Only first match applies
+                        break; // Only first matching definition applies
                     }
                 }
             }
 
-            UpdateGrid("Egendefinert tverrsnitt anvendt");
+            UpdateGrid("Anvendt egendefinert tverrsnitt");
         }
 
         /// <summary>
@@ -719,6 +764,58 @@ namespace FilterV1
                 case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
                 case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
                 default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
+            }
+        }
+
+        /// <summary>
+        /// Saves the current list of rising numbers exceptions to a JSON file. This ensures
+        /// that the user's exception preferences persist across sessions. Errors are
+        /// swallowed silently because failure to save should not prevent the user from
+        /// continuing to use the application.
+        /// </summary>
+        private void SaveRisingExceptions()
+        {
+            try
+            {
+                // Ensure the directory exists. GetDirectoryName returns null if the path
+                // contains no directory information, but our path always includes a folder.
+                var dir = Path.GetDirectoryName(_risingExceptionsFilePath);
+                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(_risingNumberExceptions ?? new List<string>(), options);
+                File.WriteAllText(_risingExceptionsFilePath, json);
+            }
+            catch
+            {
+                // Ignore any exceptions when saving. The app can still function without persistence.
+            }
+        }
+
+        /// <summary>
+        /// Loads the rising numbers exceptions from the JSON file if it exists. If the file
+        /// cannot be read or does not exist, the list is reset to an empty list. This
+        /// method should be called during application startup.
+        /// </summary>
+        private void LoadRisingExceptions()
+        {
+            try
+            {
+                if (File.Exists(_risingExceptionsFilePath))
+                {
+                    string json = File.ReadAllText(_risingExceptionsFilePath);
+                    var list = JsonSerializer.Deserialize<List<string>>(json);
+                    _risingNumberExceptions = list ?? new List<string>();
+                }
+                else
+                {
+                    _risingNumberExceptions = new List<string>();
+                }
+            }
+            catch
+            {
+                // In case of any deserialization error, fall back to an empty list.
+                _risingNumberExceptions = new List<string>();
             }
         }
 
