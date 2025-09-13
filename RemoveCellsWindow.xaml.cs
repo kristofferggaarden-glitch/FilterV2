@@ -19,6 +19,10 @@ namespace FilterV1
 
         private readonly Action<List<CellPair>> _onApply;
         private readonly List<CellPair> _cellPairs;
+        // Holds the subset of cell pairs after search filtering. When no filter is applied,
+        // this list contains all pairs. Binding the DataGrid to this list allows dynamic
+        // updates when the user types in the search box.
+        private List<CellPair> _filteredCellPairs;
         private readonly string _jsonFilePath;
 
         public RemoveCellsWindow(Action<List<CellPair>> onApply)
@@ -26,9 +30,12 @@ namespace FilterV1
             InitializeComponent();
             _onApply = onApply;
             _cellPairs = new List<CellPair>();
+            _filteredCellPairs = new List<CellPair>();
             _jsonFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FilterV1", "remove_cells.json");
             LoadCellPairs();
-            CellPairsGrid.ItemsSource = _cellPairs;
+            // Bind the DataGrid to the filtered collection. When filters are applied the
+            // contents of this list are replaced and the grid refreshed.
+            CellPairsGrid.ItemsSource = _filteredCellPairs;
         }
 
         private void LoadCellPairs()
@@ -53,6 +60,9 @@ namespace FilterV1
             {
                 MessageBox.Show($"Error loading cell pairs: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            // Populate the filtered list with all pairs initially
+            _filteredCellPairs.Clear();
+            _filteredCellPairs.AddRange(_cellPairs);
             CellPairsGrid.Items.Refresh();
         }
 
@@ -111,6 +121,7 @@ namespace FilterV1
                         var newPair = new CellPair { FirstCell = firstCell, SecondCell = secondCell };
                         if (!_cellPairs.Any(p => new CellPairComparer().Equals(p, newPair)))
                         {
+                            // Add new pair to the underlying collection
                             _cellPairs.Add(newPair);
                             addedCount++;
                         }
@@ -120,7 +131,9 @@ namespace FilterV1
 
             if (addedCount > 0)
             {
-                CellPairsGrid.Items.Refresh();
+                // Update the filtered list based on the current search term so that
+                // newly added pairs appear immediately if they match the filter.
+                FilterCellPairs(SearchTextBox?.Text ?? string.Empty);
                 SaveCellPairs();
                 PasteTextBox.Text = string.Empty;
                 PasteTextBox.Focus();
@@ -178,8 +191,9 @@ namespace FilterV1
 
                 if (addedNew)
                 {
+                    // Add to underlying list then refresh filtered view
                     _cellPairs.AddRange(newPairs);
-                    CellPairsGrid.Items.Refresh();
+                    FilterCellPairs(SearchTextBox?.Text ?? string.Empty);
                     SaveCellPairs();
                     PasteTextBox.Text = string.Empty;
                     PasteTextBox.Focus();
@@ -206,7 +220,7 @@ namespace FilterV1
                     {
                         _cellPairs.Remove(item);
                     }
-                    CellPairsGrid.Items.Refresh();
+                    FilterCellPairs(SearchTextBox?.Text ?? string.Empty);
                     SaveCellPairs();
                     MessageBox.Show($"Removed {selectedItems.Count} pattern pair(s).", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -251,6 +265,49 @@ namespace FilterV1
             {
                 textBox.Text = "Paste cell pairs here...";
             }
+        }
+
+        /// <summary>
+        /// Invoked whenever the search text changes. Filters the list of pattern pairs
+        /// based on the provided search term. The search is case-insensitive and checks
+        /// both the first and second cell values. When the search term is empty,
+        /// all pairs are displayed.
+        /// </summary>
+        /// <param name="sender">The search TextBox.</param>
+        /// <param name="e">Event arguments.</param>
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string searchTerm = (sender as TextBox)?.Text ?? string.Empty;
+            FilterCellPairs(searchTerm);
+        }
+
+        /// <summary>
+        /// Filters the underlying collection of cell pairs (_cellPairs) and populates
+        /// _filteredCellPairs with items that contain the search term. Matching is
+        /// case-insensitive and checks both columns. After filtering, the DataGrid is
+        /// refreshed to reflect the changes.
+        /// </summary>
+        /// <param name="searchTerm">The case-insensitive search string.</param>
+        private void FilterCellPairs(string searchTerm)
+        {
+            _filteredCellPairs.Clear();
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                _filteredCellPairs.AddRange(_cellPairs);
+            }
+            else
+            {
+                string term = searchTerm.Trim();
+                foreach (var pair in _cellPairs)
+                {
+                    if (pair.FirstCell?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        pair.SecondCell?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        _filteredCellPairs.Add(pair);
+                    }
+                }
+            }
+            CellPairsGrid.Items.Refresh();
         }
     }
 }

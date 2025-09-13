@@ -24,7 +24,8 @@ namespace FilterV1
                 Priority = g.Priority
             }).ToList();
 
-            // Enable multi-selection for the ListBox
+            // Enable multi-selection for the ListBox.  Users can select multiple rows
+            // and move them together using the new priority control.
             GroupsListBox.SelectionMode = SelectionMode.Extended;
 
             // Add keyboard support for Delete key
@@ -71,7 +72,7 @@ namespace FilterV1
 
             // Handle multi-line paste - split by newlines and process each line
             string[] lines = containsText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            int addedCount = 0;
+            var newEntries = new List<GroupDefinition>();
 
             foreach (string line in lines)
             {
@@ -91,36 +92,52 @@ namespace FilterV1
                 if (string.IsNullOrEmpty(trimmedLine)) continue;
 
                 // Check for duplicates
-                if (_groupDefinitions.Any(g => g.ContainsText.Equals(trimmedLine, StringComparison.OrdinalIgnoreCase)))
+                if (_groupDefinitions.Any(g => g.ContainsText.Equals(trimmedLine, StringComparison.OrdinalIgnoreCase)) ||
+                    newEntries.Any(g => g.ContainsText.Equals(trimmedLine, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue; // Skip duplicates
                 }
 
-                int priority = _groupDefinitions.Count > 0 ? _groupDefinitions.Max(g => g.Priority) + 1 : 1;
-
                 // Auto-generate group name based on contains text
                 string groupName = $"Group {trimmedLine}";
 
-                _groupDefinitions.Add(new GroupDefinition
+                newEntries.Add(new GroupDefinition
                 {
                     GroupName = groupName,
                     ContainsText = trimmedLine,
-                    Priority = priority
+                    Priority = 0 // Placeholder, will assign below
                 });
-
-                addedCount++;
             }
 
+            if (newEntries.Count > 0)
+            {
+                // Shift existing group priorities down to make room for new entries at the top
+                foreach (var g in _groupDefinitions)
+                {
+                    g.Priority += newEntries.Count;
+                }
+
+                // Assign priorities to the new entries starting from 1
+                for (int i = 0; i < newEntries.Count; i++)
+                {
+                    newEntries[i].Priority = i + 1;
+                }
+
+                // Add the new entries to the collection
+                _groupDefinitions.AddRange(newEntries);
+            }
+
+            // Clear the input and refresh the UI
             ContainsTextTextBox.Clear();
             ContainsTextTextBox.Focus(); // Keep focus for easy multiple entries
             RefreshGroupList();
 
-            if (addedCount > 1)
+            if (newEntries.Count > 1)
             {
-                MessageBox.Show($"Added {addedCount} groups successfully.", "Multiple Groups Added",
+                MessageBox.Show($"Added {newEntries.Count} groups successfully.", "Multiple Groups Added",
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            else if (addedCount == 0)
+            else if (newEntries.Count == 0)
             {
                 MessageBox.Show("No new groups were added. Check for duplicates or empty text.", "No Groups Added",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -194,6 +211,80 @@ namespace FilterV1
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        /// <summary>
+        /// Handles the click for the Set Priority button. Moves all selected groups
+        /// to the specified priority position. If the priority is invalid or no
+        /// items are selected, an informational dialog is shown. After moving,
+        /// group priorities are normalized (1..N) and the list is refreshed.
+        /// </summary>
+        private void SetPriorityButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Ensure there is at least one selection
+            if (GroupsListBox.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("Please select at least one group to move.", "Selection Required",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            // Parse desired priority from text box
+            if (!int.TryParse(MoveToPriorityTextBox.Text.Trim(), out int targetPriority) || targetPriority < 1)
+            {
+                MessageBox.Show("Please enter a valid target priority (integer >= 1).", "Invalid Priority",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Get the currently ordered groups
+            var ordered = _groupDefinitions.OrderBy(g => g.Priority).ToList();
+            // Map selected items to group definitions. The ListBox displays strings; to map to
+            // underlying objects we use the same ordered list by index.
+            var selectedGroups = new List<GroupDefinition>();
+            foreach (var item in GroupsListBox.SelectedItems)
+            {
+                int index = GroupsListBox.Items.IndexOf(item);
+                if (index >= 0 && index < ordered.Count)
+                {
+                    selectedGroups.Add(ordered[index]);
+                }
+            }
+            if (selectedGroups.Count == 0)
+            {
+                return;
+            }
+
+            // Remove selected groups from the ordered list
+            ordered = ordered.Except(selectedGroups).ToList();
+            // Clamp target priority within bounds (1..Count+1)
+            if (targetPriority > ordered.Count + 1)
+            {
+                targetPriority = ordered.Count + 1;
+            }
+            // Insert selected groups at the desired position (1-based index converted to 0-based)
+            ordered.InsertRange(targetPriority - 1, selectedGroups);
+
+            // Reassign sequential priorities
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                ordered[i].Priority = i + 1;
+            }
+
+            // Replace the original collection with the reordered list
+            _groupDefinitions = ordered;
+
+            // Refresh UI and reselect moved items in their new positions
+            RefreshGroupList();
+            GroupsListBox.SelectedItems.Clear();
+            foreach (var grp in selectedGroups)
+            {
+                int newIndex = ordered.IndexOf(grp);
+                if (newIndex >= 0 && newIndex < GroupsListBox.Items.Count)
+                {
+                    // The ListBox items correspond one-to-one with ordered groups
+                    GroupsListBox.SelectedItems.Add(GroupsListBox.Items[newIndex]);
+                }
+            }
         }
     }
 

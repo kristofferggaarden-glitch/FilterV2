@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace FilterV1
@@ -662,7 +663,8 @@ namespace FilterV1
                 ApplyCustomSort();
             });
             window.Owner = this;
-            window.ShowDialog();
+            // Open modelessly so the user can continue interacting with the main window
+            window.Show();
         }
 
         /// <summary>
@@ -885,7 +887,8 @@ namespace FilterV1
                 ApplyStarDupes();
             });
             window.Owner = this;
-            window.ShowDialog();
+            // Show modelessly so the user can copy/paste from the main window while defining rules
+            window.Show();
         }
 
         private void RemoveRelayButton_Click(object sender, RoutedEventArgs e)
@@ -1328,6 +1331,21 @@ namespace FilterV1
             _removeEqualsApplied = _undoStack.Any() && _undoStack.Peek().Rows.Cast<DataRow>().Any(r => r.ItemArray.Any(v => v?.ToString().Contains("=") == false));
             _removeLVApplied = _undoStack.Any() && _undoStack.Peek().Rows.Cast<DataRow>().Any(r => r.ItemArray.Any(v => v?.ToString().Contains("+LV") == false));
             UpdateGrid("Siste handling angret");
+        }
+
+        /// <summary>
+        /// Intercepts the Delete key in the data preview grid. When the user presses
+        /// Delete to clear cell values, this handler pushes the current state onto
+        /// the undo stack before any modifications occur. This allows the Undo
+        /// function to restore cleared cell values. Without this handler, manual
+        /// edits would not be captured by the undo stack.
+        /// </summary>
+        private void ExcelDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Delete)
+            {
+                SaveState();
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)

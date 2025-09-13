@@ -68,8 +68,15 @@
                             Style="{StaticResource SecondaryButton}" Width="106" Margin="0,0,0,8" 
                             ToolTip="Decrease priority (move down in sort order)"/>
                     <Button x:Name="RemoveGroupButton" Content="Remove" Click="RemoveGroupButton_Click" 
-                            Style="{StaticResource DangerButton}" Width="100" 
+                            Style="{StaticResource DangerButton}" Width="100" Margin="0,0,0,8" 
                             ToolTip="Remove selected group"/>
+                    <!-- New controls for moving multiple items to a specific priority -->
+                    <TextBlock Text="Move to priority:" Margin="0,10,0,5" Style="{StaticResource DescriptionText}"/>
+                    <TextBox x:Name="MoveToPriorityTextBox" Width="80" Margin="0,0,0,5" 
+                             Style="{StaticResource ModernTextBox}" ToolTip="Enter the target priority for selected groups"/>
+                    <Button x:Name="SetPriorityButton" Content="Set Priority" Width="106" 
+                            Style="{StaticResource SecondaryButton}" Click="SetPriorityButton_Click" 
+                            ToolTip="Move selected groups to the specified priority"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -511,7 +511,8 @@
                                       Background="Transparent"
                                       BorderThickness="0"
                                       Foreground="White"
-                                      Visibility="Collapsed">
+                                      Visibility="Collapsed"
+                                      PreviewKeyDown="ExcelDataGrid_PreviewKeyDown">
                                 <DataGrid.Resources>
                                     <Style TargetType="DataGridRow">
                                         <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />

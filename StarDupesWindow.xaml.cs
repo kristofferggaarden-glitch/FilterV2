@@ -99,14 +99,24 @@ namespace FilterV1
                 return;
             }
 
-            int priority = _starDupesRules.Count > 0 ? _starDupesRules.Max(r => r.Priority) + 1 : 1;
-
-            _starDupesRules.Add(new StarDupesRule
+            // Insert the new rule at the top of the priority list by
+            // incrementing priorities of existing rules and setting the
+            // new rule's priority to 1. This ensures that the newest rule
+            // appears first in the list and is treated as highest priority.
+            if (_starDupesRules.Count > 0)
+            {
+                foreach (var r in _starDupesRules)
+                {
+                    r.Priority += 1;
+                }
+            }
+            var newRule = new StarDupesRule
             {
                 DuplicateContains = duplicateContains,
                 AdjacentContains = adjacentContains,
-                Priority = priority
-            });
+                Priority = 1
+            };
+            _starDupesRules.Add(newRule);
 
             DuplicateContainsTextBox.Clear();
             AdjacentContainsTextBox.Clear();

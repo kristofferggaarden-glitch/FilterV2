@@ -42,13 +42,26 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- Header -->
                 <TextBlock Grid.Row="0" Text="Defined Pattern Pairs" 
-                         Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                           Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
 
-                <DataGrid x:Name="CellPairsGrid" Grid.Row="1" 
+                <!-- Search bar -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Style="{StaticResource DescriptionText}"/>
+                    <TextBox x:Name="SearchTextBox" Width="200" 
+                             Style="{StaticResource ModernTextBox}"
+                             ToolTip="Filter defined pattern pairs"
+                             TextChanged="SearchTextBox_TextChanged"/>
+                </StackPanel>
+
+                <!-- DataGrid displaying cell pairs -->
+                <DataGrid x:Name="CellPairsGrid" Grid.Row="2" 
                           Style="{StaticResource ModernDataGrid}"
                           AutoGenerateColumns="False" 
                           SelectionMode="Extended" 

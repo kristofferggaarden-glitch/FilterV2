@@ -229,7 +229,12 @@ namespace FilterV1
 
             string[] lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             int added = 0;
-            foreach (string line in lines)
+
+            // To ensure that the newest entries appear at the top while preserving
+            // the order the user pasted them, process the lines in reverse order
+            // and insert each new row at index 0. Without reversing, the final
+            // order in the collection would be the reverse of the pasted input.
+            foreach (string line in lines.Reverse())
             {
                 var parts = SplitLine(line);
                 string p5 = parts.Length > 0 ? parts[0].Trim() : string.Empty;
@@ -243,7 +248,7 @@ namespace FilterV1
                                    string.Equals(r.Col6Text, p6, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                _rows.Add(new CrossRow { Col5Text = p5, Col6Text = p6, SelectedOption = 1 });
+                _rows.Insert(0, new CrossRow { Col5Text = p5, Col6Text = p6, SelectedOption = 1 });
                 added++;
             }
             if (added > 0)
