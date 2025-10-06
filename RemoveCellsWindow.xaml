@@ -1,7 +1,7 @@
 ﻿<Window x:Class="FilterV1.RemoveCellsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Remove Cell Pairs" Height="705" Width="842"
+        Title="Remove Cell Pairs" Height="910" Width="842"
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
     <Grid Margin="20">

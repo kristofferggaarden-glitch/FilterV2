@@ -1,0 +1,130 @@
+﻿<!--ProcessRawDataWindow.xaml-->
+<Window x:Class="FilterV1.ProcessRawDataWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Prosesser Rådata" Height="1008" Width="900"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <StackPanel>
+                <TextBlock Text="Prosesser Rådata" Style="{StaticResource TitleText}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                    Kopier data fra råfil til nye excel-filer basert på dine malfiler.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Settings Section -->
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Innstillinger" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+
+                <TextBlock Grid.Row="1" Text="Råfil-lokasjon:" Style="{StaticResource DescriptionText}" Margin="0,0,0,5"/>
+                <Grid Grid.Row="2" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="RawFileLocationTextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Endre innstillinger" Click="SettingsButton_Click"
+                            Style="{StaticResource SecondaryButton}" Width="150"/>
+                </Grid>
+
+                <TextBlock Grid.Row="3" Text="Valgte malfiler:" Style="{StaticResource DescriptionText}"/>
+            </Grid>
+        </Border>
+
+        <!-- File Selection Section -->
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="1. Velg målmappe" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                <Grid Grid.Row="1" Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TargetFolderTextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Velg mappe" Click="SelectTargetFolderButton_Click"
+                            Style="{StaticResource ModernButton}" Width="120"/>
+                </Grid>
+
+                <TextBlock Grid.Row="2" Text="2. Angi ordrenummer (basis-navn)" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                <TextBox x:Name="OrderNumberTextBox" Grid.Row="3"
+                         Style="{StaticResource ModernTextBox}"
+                         ToolTip="F.eks. 678911-10 (uten suffiks)"
+                         Margin="0,0,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- Raw File Selection with Search -->
+        <Border Grid.Row="3" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="3. Søk og velg råfil" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+
+                <TextBox x:Name="SearchTextBox" Grid.Row="1"
+                         Style="{StaticResource ModernTextBox}"
+                         TextChanged="SearchTextBox_TextChanged"
+                         ToolTip="Skriv for å filtrere filnavn"
+                         Margin="0,0,0,10"/>
+
+                <ListBox x:Name="RawFilesListBox" Grid.Row="2" Height="200"
+                         Style="{StaticResource ModernListBox}"
+                         SelectionChanged="RawFilesListBox_SelectionChanged"/>
+            </Grid>
+        </Border>
+
+        <!-- Status Section -->
+        <Border Grid.Row="4" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="StatusTextBlock" 
+                           TextWrapping="Wrap" 
+                           Style="{StaticResource DescriptionText}"
+                           Text="Klar til å prosessere..."/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Action Buttons -->
+        <Border Grid.Row="5" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="ProcessButton" Content="Start prosessering" 
+                        Click="ProcessButton_Click" Style="{StaticResource SuccessButton}"
+                        Width="150" Margin="0,0,10,0"/>
+                <Button x:Name="CloseButton" Content="Lukk" Click="CloseButton_Click" 
+                        Style="{StaticResource SecondaryButton}" Width="80"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

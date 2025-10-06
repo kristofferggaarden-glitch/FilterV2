@@ -1349,6 +1349,7 @@ namespace FilterV1
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
+
         {
             if (_dataTable == null || string.IsNullOrEmpty(_filePath))
             {
@@ -1397,6 +1398,12 @@ namespace FilterV1
                 StatusText.Text = $"Feil ved lagring av fil - {ex.Message}";
             }
         }
+        private void ProcessRawDataButton_Click(object sender, RoutedEventArgs e)
+        {
+            var processWindow = new ProcessRawDataWindow();
+            processWindow.Owner = this;
+            processWindow.Show();
+        }
     }
 
     public class GroupConverter : IValueConverter
@@ -1405,7 +1412,6 @@ namespace FilterV1
         {
             if (value is string colorIndexStr && int.TryParse(colorIndexStr, out int colorIndex))
             {
-                // Alternate colors: odd groups = green, even groups = pink
                 return (colorIndex % 2 == 1)
                     ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(51, 76, 175, 80))
                     : new SolidColorBrush(System.Windows.Media.Color.FromArgb(51, 233, 30, 99));

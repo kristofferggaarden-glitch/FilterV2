@@ -1,0 +1,119 @@
+﻿<!--RawDataSettingsWindow.xaml-->
+<Window x:Class="FilterV1.RawDataSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rådata Innstillinger" Height="836" Width="750"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <StackPanel>
+                <TextBlock Text="Rådata Innstillinger" Style="{StaticResource TitleText}"/>
+                <TextBlock TextWrapping="Wrap" Style="{StaticResource DescriptionText}">
+                    Konfigurer hvilke malfiler som skal brukes og hvor råfilene ligger.
+                    Disse innstillingene huskes mellom økter.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Raw File Location -->
+        <Border Grid.Row="1" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Råfil-lokasjon" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="RawFileLocationTextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Velg mappe" Click="SelectRawFileLocationButton_Click"
+                            Style="{StaticResource ModernButton}" Width="120"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Template Files -->
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Malfiler" Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+
+                <!-- Template 1 (Fil som får data - F) -->
+                <TextBlock Grid.Row="1" Text="Malfil 1 (mottar data, suffiks F):" 
+                           Style="{StaticResource DescriptionText}" Margin="0,0,0,5"/>
+                <Grid Grid.Row="2" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TemplateFile1TextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Velg fil" Click="SelectTemplateFile1Button_Click"
+                            Style="{StaticResource SecondaryButton}" Width="100"/>
+                </Grid>
+
+                <!-- Template 2 (Nord - N) -->
+                <TextBlock Grid.Row="3" Text="Malfil 2 (4. Nord Ledningsliste - mal, suffiks N):" 
+                           Style="{StaticResource DescriptionText}" Margin="0,0,0,5"/>
+                <Grid Grid.Row="4" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TemplateFile2TextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Velg fil" Click="SelectTemplateFile2Button_Click"
+                            Style="{StaticResource SecondaryButton}" Width="100"/>
+                </Grid>
+
+                <!-- Template 3 (Durapart - D) -->
+                <TextBlock Grid.Row="5" Text="Malfil 3 (3. Durapart ledningsliste - mal, suffiks D):" 
+                           Style="{StaticResource DescriptionText}" Margin="0,0,0,5"/>
+                <Grid Grid.Row="6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TemplateFile3TextBox" IsReadOnly="True" 
+                             Style="{StaticResource ModernTextBox}" Margin="0,0,10,0"/>
+                    <Button Grid.Column="1" Content="Velg fil" Click="SelectTemplateFile3Button_Click"
+                            Style="{StaticResource SecondaryButton}" Width="100"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Action Buttons -->
+        <Border Grid.Row="3" Background="Transparent" Padding="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="SaveButton" Content="Lagre innstillinger" 
+                        Click="SaveButton_Click" Style="{StaticResource SuccessButton}"
+                        Width="150" Margin="0,0,10,0"/>
+                <Button x:Name="CancelButton" Content="Avbryt" Click="CancelButton_Click" 
+                        Style="{StaticResource SecondaryButton}" Width="80"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -155,7 +155,7 @@
     </Window.Resources>
 
     <!-- Main Background -->
-    <Grid Margin="0,0,0,-84">
+    <Grid Margin="0,0,0,-178">
         <Grid.Background>
             <RadialGradientBrush x:Name="BackgroundBrush" GradientOrigin="0.3,0.3">
                 <GradientStop Color="#667eea" Offset="0"/>
@@ -308,7 +308,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Advanced Operations Card -->
+                <!-- NEW: Process Raw Data Card -->
                 <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
@@ -320,9 +320,16 @@
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
-                            <TextBlock Text="⚡ Avanserte Operasjoner" FontSize="18" FontWeight="SemiBold" 
+                            <TextBlock Text="📊 Rådata Prosessering" FontSize="18" FontWeight="SemiBold" 
                                      Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
+
+                        <Button x:Name="ProcessRawDataButton" 
+                                Click="ProcessRawDataButton_Click"
+                                Style="{StaticResource SuccessGlassButton}"
+                                Content="🚀 Prosesser Rådata"
+                                HorizontalAlignment="Stretch"
+                                Padding="15,12"/>
 
                         <Grid>
                             <Grid.RowDefinitions>
