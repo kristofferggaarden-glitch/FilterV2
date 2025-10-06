@@ -16,10 +16,12 @@ namespace FilterV1
         private RawDataSettings _settings;
         private List<string> _allRawFiles;
         private string _selectedRawFile;
+        private Action<string> _onProcessComplete;
 
-        public ProcessRawDataWindow()
+        public ProcessRawDataWindow(Action<string> onProcessComplete = null)
         {
             InitializeComponent();
+            _onProcessComplete = onProcessComplete;
 
             // Setup settings file path
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -298,8 +300,14 @@ namespace FilterV1
             StatusTextBlock.Text += "PROSESSERING FULLFØRT!\n";
             StatusTextBlock.Text += "=================================\n";
 
-            MessageBox.Show("Prosessering fullført!", "Suksess",
+            MessageBox.Show("Prosessering fullført! F-filen vil nå lastes inn i hovedvinduet.", "Suksess",
                 MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Call the callback with the F file path to load it in MainWindow
+            _onProcessComplete?.Invoke(targetFileF);
+
+            // Close this window
+            Close();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
