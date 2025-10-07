@@ -16,7 +16,7 @@ namespace FilterV1
     /// This window provides a user experience similar to the "Remove Cell Pairs" dialog.  Users can paste two
     /// columns of text (commonly column 5 and 6) from Excel or from the application's data preview, and
     /// assign custom cross‑sections (tverrsnitt) to those pairs.  Multiple rows may be selected and assigned
-    /// via keyboard shortcuts (Ctrl+1..4) or context menu items.  The defined mappings are persisted and
+    /// via keyboard shortcuts (1..4) or context menu items.  The defined mappings are persisted and
     /// returned via a callback when the user clicks the "Apply Custom" button.
     /// </summary>
     public partial class CustomCrossSectionWindow : Window
@@ -42,12 +42,6 @@ namespace FilterV1
             public int Value { get; set; }
             public string Label { get; set; } = string.Empty;
         }
-
-        // Routed commands to enable keyboard shortcuts for setting cross‑sections on selected rows.
-        public static readonly RoutedUICommand SetGauge1Command = new RoutedUICommand("Set 1.0", "SetGauge1", typeof(CustomCrossSectionWindow));
-        public static readonly RoutedUICommand SetGauge15Command = new RoutedUICommand("Set 1.5", "SetGauge15", typeof(CustomCrossSectionWindow));
-        public static readonly RoutedUICommand SetGauge25Command = new RoutedUICommand("Set 2.5", "SetGauge25", typeof(CustomCrossSectionWindow));
-        public static readonly RoutedUICommand SetGauge40Command = new RoutedUICommand("Set 4.0", "SetGauge40", typeof(CustomCrossSectionWindow));
 
         private readonly Action<List<CrossRow>> _onApply;
         private readonly string _storeFile;
@@ -83,17 +77,8 @@ namespace FilterV1
             Load(existing);
             CrossGrid.ItemsSource = _rows;
 
-            // Bind command handlers for keyboard shortcuts.
-            CommandBindings.Add(new CommandBinding(SetGauge1Command, (_, __) => SetGaugeForSelection(1)));
-            CommandBindings.Add(new CommandBinding(SetGauge15Command, (_, __) => SetGaugeForSelection(2)));
-            CommandBindings.Add(new CommandBinding(SetGauge25Command, (_, __) => SetGaugeForSelection(3)));
-            CommandBindings.Add(new CommandBinding(SetGauge40Command, (_, __) => SetGaugeForSelection(4)));
-
-            // Create key bindings for Ctrl+1..4 at the window level.
-            InputBindings.Add(new KeyBinding(SetGauge1Command, new KeyGesture(Key.D1, ModifierKeys.Control)));
-            InputBindings.Add(new KeyBinding(SetGauge15Command, new KeyGesture(Key.D2, ModifierKeys.Control)));
-            InputBindings.Add(new KeyBinding(SetGauge25Command, new KeyGesture(Key.D3, ModifierKeys.Control)));
-            InputBindings.Add(new KeyBinding(SetGauge40Command, new KeyGesture(Key.D4, ModifierKeys.Control)));
+            // Handle keyboard shortcuts at Window level
+            this.PreviewKeyDown += Window_PreviewKeyDown;
         }
 
         /// <summary>
@@ -316,32 +301,131 @@ namespace FilterV1
         }
 
         /// <summary>
-        /// Handles key presses on the DataGrid to enable setting tverrsnitt options via Ctrl+1..4.
+        /// Handles keyboard shortcuts at window level for number keys 1-4
+        /// </summary>
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Only handle if DataGrid has focus or selected items
+            if (CrossGrid.SelectedItems.Count > 0)
+            {
+                if (e.Key == Key.D1 || e.Key == Key.NumPad1)
+                {
+                    SetGaugeForSelection(1);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
+                {
+                    SetGaugeForSelection(2);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
+                {
+                    SetGaugeForSelection(3);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
+                {
+                    SetGaugeForSelection(4);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles key presses on the DataGrid to enable setting tverrsnitt options via 1..4 keys.
+        /// VIKTIG: Forhindrer piltaster fra å forlate DataGrid når vi er på første/siste rad.
         /// </summary>
         private void CrossGrid_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            // Handle tall-taster
+            if (e.Key == Key.D1 || e.Key == Key.NumPad1)
             {
-                if (e.Key == Key.D1) { SetGaugeForSelection(1); e.Handled = true; }
-                else if (e.Key == Key.D2) { SetGaugeForSelection(2); e.Handled = true; }
-                else if (e.Key == Key.D3) { SetGaugeForSelection(3); e.Handled = true; }
-                else if (e.Key == Key.D4) { SetGaugeForSelection(4); e.Handled = true; }
+                SetGaugeForSelection(1);
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
+            {
+                SetGaugeForSelection(2);
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
+            {
+                SetGaugeForSelection(3);
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
+            {
+                SetGaugeForSelection(4);
+                e.Handled = true;
+                return;
+            }
+
+            // VIKTIG: Forhindre at piltaster forlater DataGrid
+            if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                var currentItem = CrossGrid.CurrentItem;
+                if (currentItem == null) return;
+
+                int currentIndex = CrossGrid.Items.IndexOf(currentItem);
+
+                // Hvis vi er på første rad og trykker UP - stopp!
+                if (e.Key == Key.Up && currentIndex == 0)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
+                // Hvis vi er på siste rad og trykker DOWN - stopp!
+                if (e.Key == Key.Down && currentIndex == CrossGrid.Items.Count - 1)
+                {
+                    e.Handled = true;
+                    return;
+                }
             }
         }
 
         /// <summary>
         /// Assigns the specified tverrsnitt option to all selected rows.  Refreshes the grid and saves
-        /// the state afterwards.
+        /// the state afterwards. VIKTIG: Bevarer fokus og seleksjon slik at brukeren kan fortsette å navigere.
         /// </summary>
         /// <param name="option">The option index (1=1.0, 2=1.5, 3=2.5, 4=4.0).</param>
         private void SetGaugeForSelection(int option)
         {
             if (CrossGrid.SelectedItems.Count == 0) return;
-            foreach (var row in CrossGrid.SelectedItems.Cast<CrossRow>())
+
+            // Lagre hvilke rader som var valgt
+            var selectedRows = CrossGrid.SelectedItems.Cast<CrossRow>().ToList();
+            var currentItemIndex = CrossGrid.Items.IndexOf(CrossGrid.CurrentItem);
+
+            // Oppdater verdiene
+            foreach (var row in selectedRows)
             {
                 row.SelectedOption = option;
             }
+
+            // Refresh grid
             CrossGrid.Items.Refresh();
+
+            // Gjenopprett seleksjon og fokus
+            CrossGrid.SelectedItems.Clear();
+            foreach (var row in selectedRows)
+            {
+                CrossGrid.SelectedItems.Add(row);
+            }
+
+            // Sett fokus tilbake til samme rad
+            if (currentItemIndex >= 0 && currentItemIndex < CrossGrid.Items.Count)
+            {
+                CrossGrid.CurrentItem = CrossGrid.Items[currentItemIndex];
+                CrossGrid.ScrollIntoView(CrossGrid.Items[currentItemIndex]);
+            }
+
+            // VIKTIG: Sett fokus tilbake til DataGrid slik at piltaster fungerer
+            CrossGrid.Focus();
+
             Save();
         }
 

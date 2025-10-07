@@ -17,9 +17,6 @@ namespace FilterV1
 {
     public partial class MainWindow : Window
     {
-        // Reference to the custom cross-section window. Opening it modelessly allows the user
-        // to copy data from the data preview while the window is open. Only one instance is
-        // maintained at a time.
         private CustomCrossSectionWindow _customCrossWindow;
         private string _filePath;
         private DataTable _dataTable;
@@ -43,14 +40,12 @@ namespace FilterV1
         private List<CustomCrossSectionWindow.CrossRow> _customCrossRows = new List<CustomCrossSectionWindow.CrossRow>();
         private HashSet<int> _rowsWithCustomCross = new HashSet<int>();
 
-        // Track unsaved changes
         private bool _hasUnsavedChanges = false;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // Add window closing event handler
             this.Closing += MainWindow_Closing;
 
             _undoStack = new Stack<DataTable>();
@@ -413,7 +408,7 @@ namespace FilterV1
             ExcelDataGrid.ItemsSource = null;
             ExcelDataGrid.ItemsSource = _dataTable?.DefaultView;
             StatusText.Text = $"{statusMessage} (Fjernet rader: {_rowsRemoved}, Total rader: {_dataTable?.Rows.Count ?? 0})";
-            RowCountText.Text = $"{_dataTable?.Rows.Count ?? 0} rader";
+            UpdateRowCount();
 
             if (_dataTable != null && _dataTable.Rows.Count > 0)
             {
@@ -424,6 +419,100 @@ namespace FilterV1
             {
                 EmptyState.Visibility = Visibility.Visible;
                 ExcelDataGrid.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void DataSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_dataTable == null || _dataTable.Rows.Count == 0)
+            {
+                SearchResultsText.Text = "";
+                return;
+            }
+
+            string searchTerm = DataSearchTextBox.Text?.Trim() ?? "";
+
+            if (string.IsNullOrEmpty(searchTerm))
+            {
+                var defaultView = _dataTable.DefaultView;
+                defaultView.RowFilter = "";
+                ExcelDataGrid.ItemsSource = null;
+                ExcelDataGrid.ItemsSource = defaultView;
+                SearchResultsText.Text = "";
+                UpdateRowCount();
+                return;
+            }
+
+            var filteredView = _dataTable.DefaultView;
+            var filterParts = new List<string>();
+
+            for (int i = 0; i < _dataTable.Columns.Count; i++)
+            {
+                string columnName = _dataTable.Columns[i].ColumnName;
+                string escapedSearch = searchTerm.Replace("'", "''");
+                filterParts.Add($"Convert([{columnName}], 'System.String') LIKE '%{escapedSearch}%'");
+            }
+
+            try
+            {
+                filteredView.RowFilter = string.Join(" OR ", filterParts);
+                int matchCount = filteredView.Count;
+
+                SearchResultsText.Text = matchCount > 0
+                    ? $"{matchCount} treff"
+                    : "Ingen treff";
+
+                ExcelDataGrid.ItemsSource = null;
+                ExcelDataGrid.ItemsSource = filteredView;
+                UpdateRowCount();
+            }
+            catch (Exception ex)
+            {
+                filteredView.RowFilter = "";
+                ExcelDataGrid.ItemsSource = null;
+                ExcelDataGrid.ItemsSource = filteredView;
+                SearchResultsText.Text = "Søkefeil";
+                UpdateRowCount();
+            }
+        }
+
+        private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            DataSearchTextBox.Text = "";
+
+            if (_dataTable != null)
+            {
+                var defaultView = _dataTable.DefaultView;
+                defaultView.RowFilter = "";
+                ExcelDataGrid.ItemsSource = null;
+                ExcelDataGrid.ItemsSource = defaultView;
+                SearchResultsText.Text = "";
+                UpdateRowCount();
+            }
+
+            DataSearchTextBox.Focus();
+        }
+
+        private void UpdateRowCount()
+        {
+            if (_dataTable != null)
+            {
+                var view = ExcelDataGrid.ItemsSource as DataView;
+                int displayedRows = view?.Count ?? _dataTable.Rows.Count;
+                int totalRows = _dataTable.Rows.Count;
+
+                if (displayedRows == totalRows)
+                {
+                    RowCountText.Text = $"{totalRows} rader";
+                }
+                else
+                {
+                    RowCountText.Text = $"{displayedRows} av {totalRows} rader";
+                }
+            }
+            else
+            {
+                RowCountText.Text = "0 rader";
             }
         }
 
@@ -685,7 +774,7 @@ namespace FilterV1
 
             _customCrossWindow = new CustomCrossSectionWindow(_customCrossRows, rows =>
             {
-                _customCrossRows = rows ?? new System.Collections.Generic.List<CustomCrossSectionWindow.CrossRow>();
+                _customCrossRows = rows ?? new List<CustomCrossSectionWindow.CrossRow>();
                 ApplyCustomCrossSections();
             });
             _customCrossWindow.Owner = this;
@@ -1245,7 +1334,7 @@ namespace FilterV1
 
         private void ExcelDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == System.Windows.Input.Key.Delete)
+            if (e.Key == Key.Delete)
             {
                 SaveState();
             }

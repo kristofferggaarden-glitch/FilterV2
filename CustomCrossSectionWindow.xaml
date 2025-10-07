@@ -5,15 +5,6 @@
         WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}">
 
-    <!--
-        This window mirrors the look and feel of the "Remove Cell Pairs" dialog.  Users can paste
-        two columns of text (typically column 5 and column 6 from either Excel or the app's data
-        preview) and define custom cross‑sections (tverrsnitt) for those pairs.  Multi‑row
-        selection is supported, and tverrsnitt can be assigned via keyboard shortcuts (Ctrl+1..4)
-        or the context menu.  The bottom panel provides actions to remove selected rows, apply
-        the defined mappings, or cancel.
-    -->
-
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Instructions card -->
@@ -30,7 +21,7 @@
         <Border Grid.Row="0" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
             <TextBlock TextWrapping="Wrap"
                        Style="{StaticResource DescriptionText}"
-                       Text="Lim inn to kolonner (kol. 5 og 6) fra Excel eller dataforhåndsvisningen. Marker rader og bruk Ctrl+1 (1.0 mm²), Ctrl+2 (1.5 mm²), Ctrl+3 (2.5 mm²) eller Ctrl+4 (4.0 mm²) for å sette tverrsnitt."/>
+                       Text="Lim inn to kolonner (kol. 5 og 6) fra Excel eller dataforhåndsvisningen. Marker rader og bruk tast 1 (1.0 mm²), 2 (1.5 mm²), 3 (2.5 mm²) eller 4 (4.0 mm²) for å sette tverrsnitt. Bruk piltaster for å navigere."/>
         </Border>
 
         <!-- Input Section -->
@@ -113,10 +104,10 @@
                     </DataGrid.Columns>
                     <DataGrid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="Set 1.0 mm² (Ctrl+1)" Click="SetGauge1_Click"/>
-                            <MenuItem Header="Set 1.5 mm² (Ctrl+2)" Click="SetGauge15_Click"/>
-                            <MenuItem Header="Set 2.5 mm² (Ctrl+3)" Click="SetGauge25_Click"/>
-                            <MenuItem Header="Set 4.0 mm² (Ctrl+4)" Click="SetGauge40_Click"/>
+                            <MenuItem Header="Set 1.0 mm² (Tast 1)" Click="SetGauge1_Click"/>
+                            <MenuItem Header="Set 1.5 mm² (Tast 2)" Click="SetGauge15_Click"/>
+                            <MenuItem Header="Set 2.5 mm² (Tast 3)" Click="SetGauge25_Click"/>
+                            <MenuItem Header="Set 4.0 mm² (Tast 4)" Click="SetGauge40_Click"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                 </DataGrid>
