@@ -10,15 +10,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Content Include="Filter_icon-icons.com_53730 (1).ico" />
+		<Content Include="Filter_icon-icons.com_53730 (1).ico" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
 		<PackageReference Include="System.Text.Json" Version="9.0.7" />
+		<PackageReference Include="ExcelDataReader" Version="3.7.0" />
+		<PackageReference Include="ExcelDataReader.DataSet" Version="3.7.0" />
 	</ItemGroup>
-
 
 	<ItemGroup>
 		<Compile Update="CellPairComparer.cs">

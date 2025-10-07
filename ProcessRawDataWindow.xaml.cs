@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using ExcelDataReader;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,6 +23,9 @@ namespace FilterV1
         {
             InitializeComponent();
             _onProcessComplete = onProcessComplete;
+
+            // Registrer encoding provider for ExcelDataReader (påkrevd for .xls-filer)
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             // Setup settings file path
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -226,49 +230,26 @@ namespace FilterV1
             StatusTextBlock.Text += $"✓ Kopiert {Path.GetFileName(_settings.TemplateFile2)} → {orderNumber} N.xlsx\n";
             StatusTextBlock.Text += $"✓ Kopiert {Path.GetFileName(_settings.TemplateFile3)} → {orderNumber} D.xlsx\n\n";
 
-            // Step 2: Read raw data from all sheets (column C and K from row 3)
-            // Step 2: Read raw data from all sheets (column C and K from row 3)
+            // Step 2: Read raw data
             string rawFilePath = Path.Combine(_settings.RawFileLocation, rawFileName);
             var columnCData = new List<string>();
             var columnKData = new List<string>();
 
             StatusTextBlock.Text += $"Leser rådata fra {rawFileName}...\n";
 
+            string extension = Path.GetExtension(rawFilePath).ToLower();
+
             try
             {
-                using (var rawWorkbook = new XLWorkbook(rawFilePath))
+                if (extension == ".xls")
                 {
-                    int sheetCount = rawWorkbook.Worksheets.Count;
-                    StatusTextBlock.Text += $"Fant {sheetCount} sheet(s) i råfilen\n";
-
-                    foreach (var sheet in rawWorkbook.Worksheets)
-                    {
-                        StatusTextBlock.Text += $"  Prosesserer sheet: {sheet.Name}\n";
-
-                        // Read column C (index 3) from row 3 onwards
-                        int row = 3;
-                        while (true)
-                        {
-                            var cellC = sheet.Cell(row, 3);
-                            string valueC = cellC.GetString().Trim();
-                            if (string.IsNullOrEmpty(valueC))
-                                break;
-                            columnCData.Add(valueC);
-                            row++;
-                        }
-
-                        // Read column K (index 11) from row 3 onwards
-                        row = 3;
-                        while (true)
-                        {
-                            var cellK = sheet.Cell(row, 11);
-                            string valueK = cellK.GetString().Trim();
-                            if (string.IsNullOrEmpty(valueK))
-                                break;
-                            columnKData.Add(valueK);
-                            row++;
-                        }
-                    }
+                    // Bruk ExcelDataReader for gamle .xls-filer
+                    ReadXlsFile(rawFilePath, columnCData, columnKData);
+                }
+                else
+                {
+                    // Bruk ClosedXML for .xlsx-filer
+                    ReadXlsxFile(rawFilePath, columnCData, columnKData);
                 }
             }
             catch (Exception ex)
@@ -279,20 +260,18 @@ namespace FilterV1
             StatusTextBlock.Text += $"✓ Lest {columnCData.Count} rader fra kolonne C\n";
             StatusTextBlock.Text += $"✓ Lest {columnKData.Count} rader fra kolonne K\n\n";
 
-            // Step 3: Write data to target file (F) in columns E and F from row 2
+            // Step 3: Write data to target file (F)
             StatusTextBlock.Text += $"Skriver data til {orderNumber} F.xlsx...\n";
 
             using (var targetWorkbook = new XLWorkbook(targetFileF))
             {
                 var targetSheet = targetWorkbook.Worksheets.First();
 
-                // Write column C data to column E (5) starting at row 2
                 for (int i = 0; i < columnCData.Count; i++)
                 {
                     targetSheet.Cell(i + 2, 5).Value = columnCData[i];
                 }
 
-                // Write column K data to column F (6) starting at row 2
                 for (int i = 0; i < columnKData.Count; i++)
                 {
                     targetSheet.Cell(i + 2, 6).Value = columnKData[i];
@@ -311,11 +290,101 @@ namespace FilterV1
             MessageBox.Show("Prosessering fullført! F-filen vil nå lastes inn i hovedvinduet.", "Suksess",
                 MessageBoxButton.OK, MessageBoxImage.Information);
 
-            // Call the callback with the F file path to load it in MainWindow
             _onProcessComplete?.Invoke(targetFileF);
-
-            // Close this window
             Close();
+        }
+
+        /// <summary>
+        /// Leser data fra gamle .xls-filer ved hjelp av ExcelDataReader
+        /// </summary>
+        private void ReadXlsFile(string filePath, List<string> columnCData, List<string> columnKData)
+        {
+            using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+            {
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
+                {
+                    var result = reader.AsDataSet(new ExcelDataSetConfiguration()
+                    {
+                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                        {
+                            UseHeaderRow = false
+                        }
+                    });
+
+                    int sheetCount = result.Tables.Count;
+                    StatusTextBlock.Text += $"Fant {sheetCount} sheet(s) i råfilen\n";
+
+                    foreach (System.Data.DataTable table in result.Tables)
+                    {
+                        StatusTextBlock.Text += $"  Prosesserer sheet: {table.TableName}\n";
+
+                        // Les kolonne C (index 2, siden det er 0-basert)
+                        for (int row = 2; row < table.Rows.Count; row++) // Start fra rad 3 (index 2)
+                        {
+                            if (table.Columns.Count > 2)
+                            {
+                                string valueC = table.Rows[row][2]?.ToString()?.Trim() ?? "";
+                                if (string.IsNullOrEmpty(valueC))
+                                    break;
+                                columnCData.Add(valueC);
+                            }
+                        }
+
+                        // Les kolonne K (index 10)
+                        for (int row = 2; row < table.Rows.Count; row++) // Start fra rad 3 (index 2)
+                        {
+                            if (table.Columns.Count > 10)
+                            {
+                                string valueK = table.Rows[row][10]?.ToString()?.Trim() ?? "";
+                                if (string.IsNullOrEmpty(valueK))
+                                    break;
+                                columnKData.Add(valueK);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Leser data fra .xlsx-filer ved hjelp av ClosedXML
+        /// </summary>
+        private void ReadXlsxFile(string filePath, List<string> columnCData, List<string> columnKData)
+        {
+            using (var rawWorkbook = new XLWorkbook(filePath))
+            {
+                int sheetCount = rawWorkbook.Worksheets.Count;
+                StatusTextBlock.Text += $"Fant {sheetCount} sheet(s) i råfilen\n";
+
+                foreach (var sheet in rawWorkbook.Worksheets)
+                {
+                    StatusTextBlock.Text += $"  Prosesserer sheet: {sheet.Name}\n";
+
+                    // Les kolonne C fra rad 3 og nedover
+                    int row = 3;
+                    while (true)
+                    {
+                        var cellC = sheet.Cell(row, 3);
+                        string valueC = cellC.GetString().Trim();
+                        if (string.IsNullOrEmpty(valueC))
+                            break;
+                        columnCData.Add(valueC);
+                        row++;
+                    }
+
+                    // Les kolonne K fra rad 3 og nedover
+                    row = 3;
+                    while (true)
+                    {
+                        var cellK = sheet.Cell(row, 11);
+                        string valueK = cellK.GetString().Trim();
+                        if (string.IsNullOrEmpty(valueK))
+                            break;
+                        columnKData.Add(valueK);
+                        row++;
+                    }
+                }
+            }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
