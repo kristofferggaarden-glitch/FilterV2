@@ -129,6 +129,13 @@ namespace FilterV1
             ContainsTextTextBox.Focus(); // Keep focus for easy multiple entries
             RefreshGroupList();
 
+            // After refreshing, scroll to the bottom of the list so the user can see the newly added group(s)
+            if (GroupsListBox.Items.Count > 0)
+            {
+                var lastItem = GroupsListBox.Items[GroupsListBox.Items.Count - 1];
+                GroupsListBox.ScrollIntoView(lastItem);
+            }
+
             if (newEntries.Count > 1)
             {
                 MessageBox.Show($"Added {newEntries.Count} groups successfully.", "Multiple Groups Added",

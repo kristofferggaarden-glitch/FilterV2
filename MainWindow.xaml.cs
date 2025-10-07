@@ -829,6 +829,8 @@ namespace FilterV1
                 case 2: return ("UNIBK1.5", "HYLSE 1.5", "HYLSE 1.5");
                 case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
                 case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
+                case 5: return ("RDX4BK6.0", string.Empty, string.Empty);
+                case 0: return (string.Empty, string.Empty, string.Empty);
                 default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
             }
         }

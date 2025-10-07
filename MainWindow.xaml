@@ -476,30 +476,30 @@
 
             <!-- Data Area (Right Side) -->
             <!-- Erstatt Data Area (Right Side) seksjonen i MainWindow.xaml -->
-            <!-- Fra linje ~570 til ~695 -->
+<!-- Fra linje ~570 til ~695 -->
 
-            <!-- Data Area (Right Side) -->
-            <Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="10,0,20,0" Padding="25">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+<!-- Data Area (Right Side) -->
+<Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="10,0,20,0" Padding="25">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-                    <!-- Data Header -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                        <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                    <GradientStop Color="#ff6b6b" Offset="0"/>
-                                    <GradientStop Color="#4ecdc4" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                        </Border>
-                        <TextBlock Text="📋 Data Forhåndsvisning" FontSize="22" FontWeight="SemiBold" 
+        <!-- Data Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#ff6b6b" Offset="0"/>
+                        <GradientStop Color="#4ecdc4" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <TextBlock Text="📋 Data Forhåndsvisning" FontSize="22" FontWeight="SemiBold" 
                      Foreground="White" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="RowCountText" 
+            <TextBlock x:Name="RowCountText" 
                      Text="0 rader"
                      HorizontalAlignment="Right"
                      FontSize="16"
@@ -507,18 +507,18 @@
                      Opacity="0.7"
                      Margin="30,0,0,0"
                      VerticalAlignment="Center"/>
-                    </StackPanel>
+        </StackPanel>
 
-                    <!-- Search Bar (Kompakt) -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
-                        <TextBlock Text="🔍" FontSize="14" 
+        <!-- Search Bar (Kompakt) -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+            <TextBlock Text="🔍" FontSize="14" 
                      VerticalAlignment="Center" Margin="0,0,5,0" 
                      Foreground="White" Opacity="0.8"/>
-
-                        <Border Background="White"
+            
+            <Border Background="White"
                     CornerRadius="6"
                     Padding="0">
-                            <TextBox x:Name="DataSearchTextBox" 
+                <TextBox x:Name="DataSearchTextBox" 
                          Width="250"
                          Height="32"
                          BorderThickness="0"
@@ -529,9 +529,9 @@
                          TextChanged="DataSearchTextBox_TextChanged"
                          ToolTip="Søk i alle kolonner"
                          Padding="8,6"/>
-                        </Border>
+            </Border>
 
-                        <TextBlock x:Name="SearchResultsText"
+            <TextBlock x:Name="SearchResultsText"
                      Text=""
                      Foreground="White"
                      Opacity="0.7"
@@ -539,7 +539,7 @@
                      VerticalAlignment="Center"
                      Margin="8,0,8,0"/>
 
-                        <Button x:Name="ClearSearchButton"
+            <Button x:Name="ClearSearchButton"
                     Content="✕"
                     Click="ClearSearchButton_Click"
                     Style="{StaticResource SecondaryButton}"
@@ -548,43 +548,43 @@
                     Padding="0"
                     FontSize="12"
                     ToolTip="Tøm søk"/>
-                    </StackPanel>
+        </StackPanel>
 
-                    <!-- Data Preview Area -->
-                    <Border Grid.Row="2" 
+        <!-- Data Preview Area -->
+        <Border Grid.Row="2" 
                 BorderThickness="2"
                 CornerRadius="15"
                 Padding="20">
-                        <Border.BorderBrush>
-                            <SolidColorBrush Color="White" Opacity="0.2"/>
-                        </Border.BorderBrush>
-                        <Border.Background>
-                            <SolidColorBrush Color="Black" Opacity="0.2"/>
-                        </Border.Background>
+            <Border.BorderBrush>
+                <SolidColorBrush Color="White" Opacity="0.2"/>
+            </Border.BorderBrush>
+            <Border.Background>
+                <SolidColorBrush Color="Black" Opacity="0.2"/>
+            </Border.Background>
 
-                        <!-- Empty State or DataGrid -->
-                        <Grid x:Name="DataContainer">
-                            <!-- Empty State -->
-                            <StackPanel x:Name="EmptyState" 
+            <!-- Empty State or DataGrid -->
+            <Grid x:Name="DataContainer">
+                <!-- Empty State -->
+                <StackPanel x:Name="EmptyState" 
                           HorizontalAlignment="Center" 
                           VerticalAlignment="Center"
                           Visibility="Visible">
-                                <TextBlock Text="📊" FontSize="48" 
+                    <TextBlock Text="📊" FontSize="48" 
                              HorizontalAlignment="Center" 
                              Margin="0,0,0,20"
                              Foreground="White" 
                              Opacity="0.7"/>
-                                <TextBlock Text="Dra og slipp Excel-fil her eller klikk 'Last opp Excel'" 
+                    <TextBlock Text="Dra og slipp Excel-fil her eller klikk 'Last opp Excel'" 
                              FontSize="16" 
                              HorizontalAlignment="Center"
                              Foreground="White" 
                              Opacity="0.7"
                              TextWrapping="Wrap"
                              TextAlignment="Center"/>
-                            </StackPanel>
+                </StackPanel>
 
-                            <!-- DataGrid -->
-                            <DataGrid x:Name="ExcelDataGrid" 
+                <!-- DataGrid -->
+                <DataGrid x:Name="ExcelDataGrid" 
                           AutoGenerateColumns="True" 
                           CanUserAddRows="False"
                           CanUserReorderColumns="True"
@@ -603,66 +603,66 @@
                           Foreground="White"
                           Visibility="Collapsed"
                           PreviewKeyDown="ExcelDataGrid_PreviewKeyDown">
-                                <DataGrid.Resources>
-                                    <Style TargetType="DataGridRow">
-                                        <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
-                                        <Setter Property="Height" Value="35"/>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background">
-                                                    <Setter.Value>
-                                                        <SolidColorBrush Color="White" Opacity="0.1"/>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Trigger>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background">
-                                                    <Setter.Value>
-                                                        <SolidColorBrush Color="White" Opacity="0.2"/>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
+                    <DataGrid.Resources>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
+                            <Setter Property="Height" Value="35"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="White" Opacity="0.1"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="White" Opacity="0.2"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
 
-                                    <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="Background">
-                                            <Setter.Value>
-                                                <SolidColorBrush Color="White" Opacity="0.15"/>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="Foreground" Value="White"/>
-                                        <Setter Property="Padding" Value="12,10"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="FontSize" Value="13"/>
-                                        <Setter Property="BorderBrush">
-                                            <Setter.Value>
-                                                <SolidColorBrush Color="White" Opacity="0.2"/>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="BorderThickness" Value="0,0,1,0"/>
-                                    </Style>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="White" Opacity="0.15"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Padding" Value="12,10"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="BorderBrush">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="White" Opacity="0.2"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                        </Style>
 
-                                    <Style TargetType="DataGridCell">
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="Padding" Value="8,0"/>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsSelected" Value="True">
-                                                <Setter Property="Background">
-                                                    <Setter.Value>
-                                                        <SolidColorBrush Color="White" Opacity="0.1"/>
-                                                    </Setter.Value>
-                                                </Setter>
-                                                <Setter Property="Foreground" Value="White"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.Resources>
-                            </DataGrid>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Border>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="8,0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="White" Opacity="0.1"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Resources>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</Border>
         </Grid>
 
         <!-- Status Bar -->

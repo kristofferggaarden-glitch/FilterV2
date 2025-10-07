@@ -65,12 +65,17 @@ namespace FilterV1
 
             // Populate the Tag property on the window with a list of available cross‑section options.
             // This list is used by the DataGridComboBoxColumn and ensures a single source of truth.
+            // Build list of available cross‑section options.  Value 0 represents a blank / unassigned
+            // tverrsnitt.  A new option (5) is added for RDX4K6.0 with empty sleeve types.  This list
+            // is bound to the DataGridComboBoxColumn in the XAML to provide selectable values.
             this.Tag = new List<OptionItem>
             {
+                new OptionItem { Value = 0, Label = string.Empty }, // blank / no cross‑section selected
                 new OptionItem { Value = 1, Label = "1.0 mm²" },
                 new OptionItem { Value = 2, Label = "1.5 mm²" },
                 new OptionItem { Value = 3, Label = "2.5 mm²" },
                 new OptionItem { Value = 4, Label = "4.0 mm²" },
+                new OptionItem { Value = 5, Label = "6.0 mm² (RDX4K6.0)" },
             };
 
             // Load rows either from the provided list or from persistent storage.
@@ -113,7 +118,10 @@ namespace FilterV1
                     {
                         Col5Text = r.Col5Text?.Trim() ?? string.Empty,
                         Col6Text = r.Col6Text?.Trim() ?? string.Empty,
-                        SelectedOption = (r.SelectedOption >= 1 && r.SelectedOption <= 4) ? r.SelectedOption : 1
+                        // Ensure SelectedOption is within the supported range 0..5.  If a value is outside
+                        // this range, default it to 0 (blank) rather than forcing it to 1.  This allows
+                        // persisted rows to remain blank or use the new 6 mm option.
+                        SelectedOption = (r.SelectedOption >= 0 && r.SelectedOption <= 5) ? r.SelectedOption : 0
                     });
                 }
             }
@@ -233,7 +241,8 @@ namespace FilterV1
                                    string.Equals(r.Col6Text, p6, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                _rows.Insert(0, new CrossRow { Col5Text = p5, Col6Text = p6, SelectedOption = 1 });
+                // Insert new rows with SelectedOption = 0 so they are blank by default (no preassigned tverrsnitt)
+                _rows.Insert(0, new CrossRow { Col5Text = p5, Col6Text = p6, SelectedOption = 0 });
                 added++;
             }
             if (added > 0)
@@ -334,6 +343,11 @@ namespace FilterV1
                     SetGaugeForSelection(4);
                     e.Handled = true;
                 }
+                else if (e.Key == Key.D5 || e.Key == Key.NumPad5)
+                {
+                    SetGaugeForSelection(5);
+                    e.Handled = true;
+                }
             }
         }
 
@@ -392,6 +406,8 @@ namespace FilterV1
                 option = 3;
             else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
                 option = 4;
+            else if (e.Key == Key.D5 || e.Key == Key.NumPad5)
+                option = 5;
 
             if (option > 0)
             {
