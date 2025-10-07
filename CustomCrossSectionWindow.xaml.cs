@@ -305,6 +305,12 @@ namespace FilterV1
         /// </summary>
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            // If already handled by a child control (e.g. DataGrid preview handler), do nothing
+            if (e.Handled)
+            {
+                return;
+            }
+
             // Only handle if DataGrid has focus or selected items
             if (CrossGrid.SelectedItems.Count > 0)
             {
@@ -337,31 +343,9 @@ namespace FilterV1
         /// </summary>
         private void CrossGrid_KeyDown(object sender, KeyEventArgs e)
         {
-            // Handle tall-taster
-            if (e.Key == Key.D1 || e.Key == Key.NumPad1)
-            {
-                SetGaugeForSelection(1);
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
-            {
-                SetGaugeForSelection(2);
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
-            {
-                SetGaugeForSelection(3);
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
-            {
-                SetGaugeForSelection(4);
-                e.Handled = true;
-                return;
-            }
+            // Do not handle number keys here; they are handled in the PreviewKeyDown to ensure
+            // the DataGrid doesn't interpret them as starting cell editing and moving focus.
+            // Leaving this block empty allows the PreviewKeyDown handler to intercept the keys first.
 
             // VIKTIG: Forhindre at piltaster forlater DataGrid
             if (e.Key == Key.Up || e.Key == Key.Down)
@@ -384,6 +368,108 @@ namespace FilterV1
                     e.Handled = true;
                     return;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Preview handler for key presses on the DataGrid.  This runs before the DataGrid gets a chance to
+        /// interpret the key and allows us to override default behavior.  We intercept number keys (1-4)
+        /// regardless of modifier keys so that the DataGrid doesn't treat them as input to a cell (which
+        /// otherwise triggers editing and moves focus like the Tab key).  We also handle arrow navigation
+        /// with optional Shift to extend the selection and prevent leaving the DataGrid at the first/last row.
+        /// </summary>
+        private void CrossGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (CrossGrid == null) return;
+
+            // Determine if a number key (1-4) was pressed.  We ignore any modifier keys (Ctrl, Shift, Alt)
+            int option = 0;
+            if (e.Key == Key.D1 || e.Key == Key.NumPad1)
+                option = 1;
+            else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
+                option = 2;
+            else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
+                option = 3;
+            else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
+                option = 4;
+
+            if (option > 0)
+            {
+                // Only assign if there is an active selection
+                if (CrossGrid.SelectedItems.Count > 0)
+                {
+                    SetGaugeForSelection(option);
+                }
+
+                // Handle the event so the DataGrid doesn't treat the key as cell input
+                e.Handled = true;
+                return;
+            }
+
+            // Handle Up/Down arrow keys for navigation and selection
+            if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                // Identify current row index
+                var currentItem = CrossGrid.CurrentItem;
+                int currentIndex = currentItem != null ? CrossGrid.Items.IndexOf(currentItem) : -1;
+
+                // Determine if Shift is pressed (to extend selection)
+                bool shiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+
+                // Determine the target index based on arrow key
+                int delta = e.Key == Key.Up ? -1 : 1;
+                int targetIndex = currentIndex + delta;
+
+                // If there is no current item, set the first item as current
+                if (currentIndex < 0 && CrossGrid.Items.Count > 0)
+                {
+                    targetIndex = e.Key == Key.Up ? 0 : 0;
+                }
+
+                // Bound the target index within 0 and Count-1
+                if (targetIndex < 0)
+                {
+                    e.Handled = true;
+                    return;
+                }
+                if (targetIndex >= CrossGrid.Items.Count)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
+                // If Shift is pressed, extend or shrink the selection
+                if (shiftPressed)
+                {
+                    var targetItem = CrossGrid.Items[targetIndex];
+                    if (CrossGrid.SelectedItems.Contains(targetItem))
+                    {
+                        // If the target is already selected, remove it to shrink selection
+                        CrossGrid.SelectedItems.Remove(targetItem);
+                    }
+                    else
+                    {
+                        // Otherwise add it to extend selection
+                        CrossGrid.SelectedItems.Add(targetItem);
+                    }
+
+                    // Keep the current item where it was and focus back to grid
+                    CrossGrid.CurrentItem = currentItem;
+                    CrossGrid.ScrollIntoView(targetItem);
+                }
+                else
+                {
+                    // Without shift, just move selection up/down
+                    var targetItem = CrossGrid.Items[targetIndex];
+                    CrossGrid.SelectedItems.Clear();
+                    CrossGrid.SelectedItems.Add(targetItem);
+                    CrossGrid.CurrentItem = targetItem;
+                    CrossGrid.ScrollIntoView(targetItem);
+                }
+
+                CrossGrid.Focus();
+                e.Handled = true;
+                return;
             }
         }
 

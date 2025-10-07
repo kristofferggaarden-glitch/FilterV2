@@ -65,7 +65,8 @@
                           GridLinesVisibility="Horizontal"
                           HorizontalGridLinesBrush="{StaticResource BorderBrush}"
                           Background="White"
-                          KeyDown="CrossGrid_KeyDown">
+                          KeyDown="CrossGrid_KeyDown"
+                          PreviewKeyDown="CrossGrid_PreviewKeyDown">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Column 5 Contains" Binding="{Binding Col5Text}" Width="*" IsReadOnly="True">
                             <DataGridTextColumn.HeaderStyle>
