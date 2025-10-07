@@ -253,6 +253,7 @@
             <StackPanel Grid.Column="0" Margin="20,0,10,0">
 
                 <!-- Quick Actions Card -->
+                <!-- Quick Actions Card -->
                 <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
@@ -268,8 +269,18 @@
                                      Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
 
+                        <Button x:Name="AutoFilterButton" 
+                                Click="AutoFilterButton_Click" 
+                                Style="{StaticResource SuccessGlassButton}"
+                                Content="⚡ Auto-Filtrer (Kjør Alt)"
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Stretch"/>
+
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
@@ -282,28 +293,71 @@
                                     Click="RemoveAllButton_Click" 
                                     Style="{StaticResource PrimaryGlassButton}"
                                     Grid.Row="0" Grid.Column="0"
-                                    Content="🔧 Fjern =+LV+MX+XS" 
-                                    Margin="-19,0,5,10"/>
+                                    Content="1. Fjern =+LV+MX+XS" 
+                                    Margin="0,0,5,10"/>
 
                             <Button x:Name="RemoveDupesButton" 
                                     Click="RemoveDupesButton_Click" 
                                     Style="{StaticResource PrimaryGlassButton}"
                                     Grid.Row="0" Grid.Column="1"
-                                    Content="🔄 Fjern Duplikater"
+                                    Content="2. Fjern Duplikater"
                                     Margin="5,0,0,10"/>
 
                             <Button x:Name="RemoveRisingNumbersButton" 
                                     Click="RemoveRisingNumbersButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}" Grid.Column="0"
-                                    Content="📈 Stigende Tall"
-                                    Margin="-19,53,5,0" Grid.RowSpan="2"/>
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="1" Grid.Column="0"
+                                    Content="3. Stigende Tall"
+                                    Margin="0,0,5,10"/>
+
+                            <Button x:Name="StarDupesButton" 
+                                    Click="StarDupesButton_Click" 
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="1" Grid.Column="1"
+                                    Content="4. ⭐ Stjerne Duplikater"
+                                    Margin="5,0,0,10"/>
+
+                            <Button x:Name="MarkUnmarkedDupesButton" 
+                                    Click="MarkUnmarkedDupesButton_Click" 
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="2" Grid.Column="0"
+                                    Content="4b. Marker Umerkede Dupes"
+                                    Margin="0,0,5,10"/>
 
                             <Button x:Name="RemoveCellsButton" 
                                     Click="RemoveDefinedCellsButton_Click" 
                                     Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="1" Grid.Column="1"
-                                    Content="✂️ Fjern Celler"
-                                    Margin="5,0,0,0"/>
+                                    Grid.Row="2" Grid.Column="1"
+                                    Content="5. ✂️ Fjern Celler"
+                                    Margin="5,0,0,10"/>
+
+                            <Button x:Name="RemoveRelayButton" 
+                                    Click="RemoveRelayButton_Click" 
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="3" Grid.Column="0"
+                                    Content="6. 🔌 Uregelmessig Fjerning"
+                                    Margin="0,0,5,10"/>
+
+                            <Button x:Name="SortButton" 
+                                    Click="SortButton_Click" 
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="3" Grid.Column="1"
+                                    Content="7. 🎯 Egendefinert Sortering"
+                                    Margin="5,0,0,10"/>
+
+                            <Button x:Name="CustomTextFillButton" 
+                                    Click="CustomTextFillButton_Click" 
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="4" Grid.Column="0"
+                                    Content="8. Standard Tverrsnitt"
+                                    Margin="0,0,5,10"/>
+
+                            <Button x:Name="CustomCrossSectionButton"
+                                    Click="CustomCrossSectionButton_Click"
+                                    Style="{StaticResource PrimaryGlassButton}"
+                                    Grid.Row="4" Grid.Column="1"
+                                    Content="9. Egendefinert Tverrsnitt"
+                                    Margin="5,0,0,10"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -325,74 +379,49 @@
                         </StackPanel>
 
                         <Button x:Name="ProcessRawDataButton" 
-                                Click="ProcessRawDataButton_Click"
+                                Click="ProcessRawDataButton_Click" 
                                 Style="{StaticResource SuccessGlassButton}"
                                 Content="🚀 Prosesser Rådata"
                                 HorizontalAlignment="Stretch"
                                 Padding="15,12"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Additional Operations Card -->
+                <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#ff6b6b" Offset="0"/>
+                                        <GradientStop Color="#4ecdc4" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <TextBlock Text="🛠️ Tilleggsfunksjoner" FontSize="18" FontWeight="SemiBold" 
+                                     Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
 
                         <Grid>
-                            <Grid.RowDefinitions>
-                                <!-- Updated row definitions: 4 auto rows to accommodate custom cross section button -->
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Button x:Name="SortButton" 
-                                    Click="SortButton_Click" 
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="0" Grid.Column="0"
-                                    Content="🎯 Egendefinert &#xD;&#xA;Sortering"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="CustomTextFillButton" 
-                                    Click="CustomTextFillButton_Click" 
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="0" Grid.Column="1"
-                                    Content="Standard tverrsnitt"
-                                    Margin="5,0,0,10"/>
-
-                            <Button x:Name="StarDupesButton" 
-                                    Click="StarDupesButton_Click" 
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="1" Grid.Column="0"
-                                    Content="⭐ Stjerne Duplikater"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="RemoveRelayButton" 
-                                    Click="RemoveRelayButton_Click" 
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="1" Grid.Column="1"
-                                    Content="🔌 Uregelmessig&#xD;&#xA; Fjerning"
-                                    Margin="5,0,0,10"/>
-
                             <Button x:Name="ReorganizeCellsButton" 
                                     Click="ReorganizeCellsButton_Click" 
                                     Style="{StaticResource GlassButton}"
-                                    Grid.Row="2" Grid.Column="0"
+                                    Grid.Column="0"
                                     Content="🔄 Reorganiser"
-                                    Margin="0,0,5,0"/>
+                                    Margin="0,0,5,10"/>
 
                             <Button x:Name="ConvertToDurapartButton" 
                                     Click="ConvertToDurapartButton_Click" 
                                     Style="{StaticResource GlassButton}"
-                                    Grid.Row="2" Grid.Column="1"
-                                    Content="🔀 Konverter til &#xD;&#xA;Durapart"
-                                    Margin="5,0,0,0"/>
-
-                            <!-- Ny knapp: Egendefinert tverrsnitt -->
-                            <Button x:Name="CustomCrossSectionButton"
-                                    Click="CustomCrossSectionButton_Click"
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="3" Grid.Column="0"
-                                    Content="Egendefinert tverrsnitt"
-                                    Margin="0,10,5,0"/>
+                                    Grid.Column="1"
+                                    Content="🔀 Konverter til Durapart"
+                                    Margin="5,0,0,10"/>
                         </Grid>
                     </StackPanel>
                 </Border>

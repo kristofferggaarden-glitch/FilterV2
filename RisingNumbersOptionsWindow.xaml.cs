@@ -148,15 +148,15 @@ namespace FilterV1
             }
             else
             {
-                // Legg til nytt unntak
-                var newException = new ExceptionItem { Text = txt, IsChecked = true };
+                // Legg til nytt unntak - DEFAULT UNCHECKED for sikkerhet
+                var newException = new ExceptionItem { Text = txt, IsChecked = false };
                 _allExceptions.Add(newException);
 
                 // Opprett ny checkbox
                 var cb = new CheckBox
                 {
                     Content = txt,
-                    IsChecked = true,
+                    IsChecked = false, // Default unchecked
                     Tag = newException,
                     Margin = new Thickness(5)
                 };

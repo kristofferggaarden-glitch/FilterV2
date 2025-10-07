@@ -37,24 +37,27 @@ namespace FilterV1
         private readonly string _starDupesSettingsFilePath;
         private readonly string _removeRelaySettingsFilePath;
         private readonly string _conversionRulesSettingsFilePath;
-        // File path for storing the rising numbers exception list. Persisted between sessions.
         private readonly string _risingExceptionsFilePath;
 
-        // Added for rising numbers exceptions and custom cross‑section handling
         private List<string> _risingNumberExceptions = new List<string>();
         private List<CustomCrossSectionWindow.CrossRow> _customCrossRows = new List<CustomCrossSectionWindow.CrossRow>();
         private HashSet<int> _rowsWithCustomCross = new HashSet<int>();
 
+        // Track unsaved changes
+        private bool _hasUnsavedChanges = false;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            // Add window closing event handler
+            this.Closing += MainWindow_Closing;
 
             _undoStack = new Stack<DataTable>();
             _rowsRemoved = 0;
             _removeEqualsApplied = false;
             _removeLVApplied = false;
 
-            // Set up settings file paths
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appDataPath, "FilterV1");
             Directory.CreateDirectory(appFolder);
@@ -63,22 +66,35 @@ namespace FilterV1
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
             _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
             _conversionRulesSettingsFilePath = Path.Combine(appFolder, "ConversionRulesSettings.json");
-
-            // Set up the file path for rising number exceptions.  This list will be loaded
-            // during startup and saved whenever the user modifies it via the options window.
             _risingExceptionsFilePath = Path.Combine(appFolder, "RisingExceptions.json");
 
-            // After all file paths are set, load previously saved exceptions for the rising numbers removal.
-            // This ensures that user-defined exceptions persist across sessions.  The file path
-            // must be initialized before calling this method.
             LoadRisingExceptions();
-
-            // Load all settings from persistent storage
             LoadCustomGroups();
             LoadTextFillPatterns();
             LoadStarDupesRules();
             LoadRemoveRelayPatterns();
             LoadConversionRules();
+        }
+
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_hasUnsavedChanges && _dataTable != null)
+            {
+                var result = MessageBox.Show(
+                    "Du har ulagrede endringer. Vil du lagre før du lukker?",
+                    "Ulagrede endringer",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    SaveButton_Click(this, new RoutedEventArgs());
+                }
+                else if (result == MessageBoxResult.Cancel)
+                {
+                    e.Cancel = true;
+                }
+            }
         }
 
         private void LoadCustomGroups()
@@ -294,6 +310,7 @@ namespace FilterV1
                 _rowsRemoved = 0;
                 _removeEqualsApplied = false;
                 _removeLVApplied = false;
+                _hasUnsavedChanges = false;
                 LoadExcelFile();
             }
         }
@@ -323,8 +340,8 @@ namespace FilterV1
                     }
 
                     UpdateGrid($"Fil lastet successfully. Total rader: {_dataTable.Rows.Count}");
+                    _hasUnsavedChanges = false;
 
-                    // Show DataGrid and hide empty state
                     EmptyState.Visibility = Visibility.Collapsed;
                     ExcelDataGrid.Visibility = Visibility.Visible;
                     ExcelDataGrid.ItemsSource = _dataTable.DefaultView;
@@ -342,6 +359,7 @@ namespace FilterV1
             {
                 DataTable clone = _dataTable.Copy();
                 _undoStack.Push(clone);
+                _hasUnsavedChanges = true;
             }
         }
 
@@ -419,9 +437,6 @@ namespace FilterV1
 
             SaveState();
 
-            // Execute all removal functions in sequence (original buttons 1, 2, 3, 4)
-
-            // 1. Remove = from cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int i = 0; i < _dataTable.Columns.Count; i++)
@@ -434,7 +449,6 @@ namespace FilterV1
                 }
             }
 
-            // 2. Remove +LV from cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int i = 0; i < _dataTable.Columns.Count; i++)
@@ -447,7 +461,6 @@ namespace FilterV1
                 }
             }
 
-            // 3. Remove MX and adjacent cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
@@ -468,7 +481,6 @@ namespace FilterV1
                 }
             }
 
-            // 4. Remove XS and adjacent cells
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
@@ -489,7 +501,6 @@ namespace FilterV1
                 }
             }
 
-            // Move cells upward after all removals
             MoveCellsUpward();
             _removeEqualsApplied = true;
             _removeLVApplied = true;
@@ -503,17 +514,13 @@ namespace FilterV1
                 StatusText.Text = "Ingen fil lastet";
                 return;
             }
-            // Open the rising numbers options window to allow the user to specify exceptions.
-            // Any exception strings returned will be used to skip rows where column 5 or 6 contains the exception.
+
             var optsWin = new RisingNumbersOptionsWindow(_risingNumberExceptions, ex =>
             {
-                // Update the exception list with the selection from the dialog. Use an empty
-                // list instead of null to avoid null reference checks later.
                 _risingNumberExceptions = ex ?? new List<string>();
             });
             optsWin.Owner = this;
             optsWin.ShowDialog();
-            // Persist the current exception list to disk so it is remembered between sessions.
             SaveRisingExceptions();
 
             SaveState();
@@ -524,7 +531,6 @@ namespace FilterV1
                 string col5Value = row[4]?.ToString();
                 string col6Value = row[5]?.ToString();
 
-                // If either column contains an exception string (case‑insensitive), skip this row.
                 bool skip = false;
                 if (_risingNumberExceptions != null && _risingNumberExceptions.Any())
                 {
@@ -553,7 +559,6 @@ namespace FilterV1
                         {
                             if (int.TryParse(match5.Groups[2].Value, out int number5) && int.TryParse(match6.Groups[2].Value, out int number6))
                             {
-                                // Check both directions for rising numbers
                                 if (number6 == number5 + 1)
                                 {
                                     row[4] = string.Empty;
@@ -596,7 +601,6 @@ namespace FilterV1
                             if (string.IsNullOrEmpty(pair.FirstCell) || string.IsNullOrEmpty(pair.SecondCell))
                                 continue;
 
-                            // FORBEDRET LOGIKK: Sjekk begge kombinasjoner i samme rad
                             bool pattern1Match = (col5Value.Contains(pair.FirstCell, StringComparison.OrdinalIgnoreCase) &&
                                                 col6Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase)) ||
                                                (col5Value.Contains(pair.SecondCell, StringComparison.OrdinalIgnoreCase) &&
@@ -655,27 +659,16 @@ namespace FilterV1
                 return;
             }
 
-            // Open the custom group window with current groups
             var window = new CustomGroupWindow(_customGroups, groupDefinitions =>
             {
                 _customGroups = groupDefinitions;
-                SaveCustomGroups(); // Save to persistent storage
+                SaveCustomGroups();
                 ApplyCustomSort();
             });
             window.Owner = this;
-            // Open modelessly so the user can continue interacting with the main window
             window.Show();
         }
 
-        /// <summary>
-        /// Opens the custom cross‑section window for defining per‑row tverrsnitt assignments.
-        /// After the dialog is closed, applies the definitions to the current data table.
-        /// </summary>
-        /// <summary>
-        /// Opens the custom cross section window. Before opening, attempts to parse the current clipboard contents into
-        /// a list of cross rows if the clipboard contains tabular text (e.g. copied from Excel or the app's DataGrid).
-        /// The parsed rows will seed the window so the user can immediately apply tverrsnitt options without manually pasting.
-        /// </summary>
         private void CustomCrossSectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_dataTable == null)
@@ -683,17 +676,13 @@ namespace FilterV1
                 StatusText.Text = "Ingen fil lastet";
                 return;
             }
-            // If the custom cross‑section window is already open, just bring it to the front.
+
             if (_customCrossWindow != null && _customCrossWindow.IsLoaded)
             {
                 _customCrossWindow.Activate();
                 return;
             }
 
-            // Create and show a modeless custom cross‑section window.  This allows the user to
-            // interact with the main window (for example, to copy values from the data preview)
-            // while defining custom mappings.  When the window closes, the reference is cleared
-            // and the custom mappings are applied.
             _customCrossWindow = new CustomCrossSectionWindow(_customCrossRows, rows =>
             {
                 _customCrossRows = rows ?? new System.Collections.Generic.List<CustomCrossSectionWindow.CrossRow>();
@@ -704,13 +693,6 @@ namespace FilterV1
             _customCrossWindow.Show();
         }
 
-        /// <summary>
-        /// Applies the custom cross‑section definitions stored in _customCrossRows to the
-        /// current DataTable. For each row in the table, if the values in columns 5 and 6
-        /// match a defined pattern, the tverrsnitt option is applied to columns 2–4.
-        /// Rows that receive a custom tverrsnitt are recorded in _rowsWithCustomCross
-        /// so that standard tverrsnitt rules will not overwrite them.
-        /// </summary>
         private void ApplyCustomCrossSections()
         {
             if (_dataTable == null) return;
@@ -730,11 +712,9 @@ namespace FilterV1
                     bool has5 = !string.IsNullOrWhiteSpace(def.Col5Text);
                     bool has6 = !string.IsNullOrWhiteSpace(def.Col6Text);
 
-                    // Direct order: match col5→def.Col5Text and col6→def.Col6Text if specified
                     bool matchDirect = (!has5 || (col5.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0)) &&
                                        (!has6 || (col6.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0));
 
-                    // Swapped order: match col6→def.Col5Text and col5→def.Col6Text if specified
                     bool matchSwapped = (!has5 || (col6.IndexOf(def.Col5Text, StringComparison.OrdinalIgnoreCase) >= 0)) &&
                                         (!has6 || (col5.IndexOf(def.Col6Text, StringComparison.OrdinalIgnoreCase) >= 0));
 
@@ -745,7 +725,7 @@ namespace FilterV1
                         row[2] = c3;
                         row[3] = c4;
                         _rowsWithCustomCross.Add(i);
-                        break; // Only first matching definition applies
+                        break;
                     }
                 }
             }
@@ -753,11 +733,6 @@ namespace FilterV1
             UpdateGrid("Anvendt egendefinert tverrsnitt");
         }
 
-        /// <summary>
-        /// Maps a cross option index to the three corresponding tverrsnitt values for columns 2, 3, and 4.
-        /// </summary>
-        /// <param name="option">Option index (1–4)</param>
-        /// <returns>Tuple of (col2, col3, col4) strings</returns>
         private (string c2, string c3, string c4) MapCrossOption(int option)
         {
             switch (option)
@@ -769,18 +744,10 @@ namespace FilterV1
             }
         }
 
-        /// <summary>
-        /// Saves the current list of rising numbers exceptions to a JSON file. This ensures
-        /// that the user's exception preferences persist across sessions. Errors are
-        /// swallowed silently because failure to save should not prevent the user from
-        /// continuing to use the application.
-        /// </summary>
         private void SaveRisingExceptions()
         {
             try
             {
-                // Ensure the directory exists. GetDirectoryName returns null if the path
-                // contains no directory information, but our path always includes a folder.
                 var dir = Path.GetDirectoryName(_risingExceptionsFilePath);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
@@ -790,15 +757,9 @@ namespace FilterV1
             }
             catch
             {
-                // Ignore any exceptions when saving. The app can still function without persistence.
             }
         }
 
-        /// <summary>
-        /// Loads the rising numbers exceptions from the JSON file if it exists. If the file
-        /// cannot be read or does not exist, the list is reset to an empty list. This
-        /// method should be called during application startup.
-        /// </summary>
         private void LoadRisingExceptions()
         {
             try
@@ -816,7 +777,6 @@ namespace FilterV1
             }
             catch
             {
-                // In case of any deserialization error, fall back to an empty list.
                 _risingNumberExceptions = new List<string>();
             }
         }
@@ -829,11 +789,10 @@ namespace FilterV1
                 return;
             }
 
-            // Open the convert to durapart window with current rules
             var window = new ConvertToDurapartWindow(_conversionRules, rules =>
             {
                 _conversionRules = rules;
-                SaveConversionRules(); // Save to persistent storage
+                SaveConversionRules();
                 ApplyConversionRules();
             });
             window.Owner = this;
@@ -860,11 +819,10 @@ namespace FilterV1
                 return;
             }
 
-            // Open the custom text fill window with current patterns
             var window = new CustomTextFillWindow(_textFillPatterns, patterns =>
             {
                 _textFillPatterns = patterns;
-                SaveTextFillPatterns(); // Save to persistent storage
+                SaveTextFillPatterns();
                 ApplyTextFillPatterns();
             });
             window.Owner = this;
@@ -879,15 +837,13 @@ namespace FilterV1
                 return;
             }
 
-            // Open the star dupes window with current rules
             var window = new StarDupesWindow(_starDupesRules, rules =>
             {
                 _starDupesRules = rules;
-                SaveStarDupesRules(); // Save to persistent storage
+                SaveStarDupesRules();
                 ApplyStarDupes();
             });
             window.Owner = this;
-            // Show modelessly so the user can copy/paste from the main window while defining rules
             window.Show();
         }
 
@@ -899,14 +855,10 @@ namespace FilterV1
                 return;
             }
 
-            // Open the remove relay window with current patterns
             var window = new RemoveRelayWindow(_removeRelayPatterns, (allPatterns, enabledPatterns) =>
             {
-                // Save all patterns for persistence, but only process enabled ones
-                _removeRelayPatterns = allPatterns; // Save all patterns for next time
-                SaveRemoveRelayPatterns(); // Save to persistent storage
-
-                // Process only enabled patterns
+                _removeRelayPatterns = allPatterns;
+                SaveRemoveRelayPatterns();
                 ApplyRemoveRelay(enabledPatterns);
             });
             window.Owner = this;
@@ -922,7 +874,6 @@ namespace FilterV1
 
             for (int i = 0; i < _dataTable.Rows.Count; i++)
             {
-                // Skip rows that have been assigned a custom cross‑section
                 if (_rowsWithCustomCross.Contains(i))
                     continue;
 
@@ -942,7 +893,7 @@ namespace FilterV1
                         row[2] = col3;
                         row[3] = col4;
                         modifiedRows.Add(rowIndex);
-                        break; // apply only first matching pattern
+                        break;
                     }
                 }
             }
@@ -968,7 +919,6 @@ namespace FilterV1
 
             SaveState();
 
-            // IMPORTANT: Ensure higher priority text is always on the left (column 5)
             if (_dataTable.Columns.Count >= 6)
             {
                 for (int i = 0; i < _dataTable.Rows.Count; i++)
@@ -976,44 +926,35 @@ namespace FilterV1
                     string col5Value = _dataTable.Rows[i][4]?.ToString() ?? "";
                     string col6Value = _dataTable.Rows[i][5]?.ToString() ?? "";
 
-                    // Find the priority of each column's text (lower number = higher priority)
                     int col5Priority = GetTextPriority(col5Value);
                     int col6Priority = GetTextPriority(col6Value);
 
-                    // If column 6 has higher priority text (lower number) than column 5, swap them
-                    // OR if column 6 has priority text and column 5 doesn't have any priority text
                     bool shouldSwap = false;
 
                     if (col6Priority > 0 && col5Priority == 0)
                     {
-                        // Column 6 has priority text, column 5 doesn't
                         shouldSwap = true;
                     }
                     else if (col6Priority > 0 && col5Priority > 0 && col6Priority < col5Priority)
                     {
-                        // Both have priority text, but column 6 has higher priority (lower number)
                         shouldSwap = true;
                     }
 
                     if (shouldSwap)
                     {
-                        _dataTable.Rows[i][4] = col6Value;  // Move higher priority text to column 5
-                        _dataTable.Rows[i][5] = col5Value;  // Move lower priority text to column 6
+                        _dataTable.Rows[i][4] = col6Value;
+                        _dataTable.Rows[i][5] = col5Value;
                     }
                 }
             }
 
-            // Group rows based on custom definitions with priority-based assignment
             var groupedRows = new List<(GroupDefinition Group, List<DataRow> Rows)>();
             var ungroupedRows = new List<DataRow>();
 
-            // Sort groups by priority (ascending - lower number = higher priority)
             var sortedGroups = _customGroups.OrderBy(g => g.Priority).ToList();
 
-            // Track which rows have been assigned to prevent double-assignment
             var assignedRows = new HashSet<DataRow>();
 
-            // Process each group definition in priority order (highest priority first)
             foreach (var group in sortedGroups)
             {
                 var matchingRows = new List<DataRow>();
@@ -1022,23 +963,20 @@ namespace FilterV1
                 {
                     var row = _dataTable.Rows[i];
 
-                    // Skip if this row is already assigned to a higher priority group
                     if (assignedRows.Contains(row)) continue;
 
                     string col5Value = row[4]?.ToString() ?? "";
                     string col6Value = row[5]?.ToString() ?? "";
 
-                    // Check if this row matches the current group (check both columns 5 and 6)
                     if (col5Value.Contains(group.ContainsText) || col6Value.Contains(group.ContainsText))
                     {
                         matchingRows.Add(row);
-                        assignedRows.Add(row); // Mark as assigned
+                        assignedRows.Add(row);
                     }
                 }
 
                 if (matchingRows.Count > 0)
                 {
-                    // Sort within group
                     matchingRows.Sort((a, b) =>
                     {
                         string aValue = a[4]?.ToString() ?? "";
@@ -1050,7 +988,6 @@ namespace FilterV1
                 }
             }
 
-            // Collect ungrouped rows (rows that don't match any group definition)
             foreach (DataRow row in _dataTable.Rows)
             {
                 if (!assignedRows.Contains(row))
@@ -1059,10 +996,8 @@ namespace FilterV1
                 }
             }
 
-            // Create new sorted table
             DataTable sortedTable = _dataTable.Clone();
 
-            // Add grouped rows with sequential group numbers (1, 2, 3, 4...)
             int groupIndex = 1;
             foreach (var (group, rows) in groupedRows)
             {
@@ -1071,7 +1006,6 @@ namespace FilterV1
                     var newRow = sortedTable.NewRow();
                     newRow.ItemArray = row.ItemArray;
 
-                    // Set group number for the entire group
                     if (sortedTable.Columns.Count > 6)
                     {
                         newRow[6] = groupIndex.ToString();
@@ -1084,10 +1018,9 @@ namespace FilterV1
 
                     sortedTable.Rows.Add(newRow);
                 }
-                groupIndex++; // Move to next group number
+                groupIndex++;
             }
 
-            // Add ungrouped rows at the end
             foreach (var row in ungroupedRows)
             {
                 var newRow = sortedTable.NewRow();
@@ -1095,7 +1028,7 @@ namespace FilterV1
 
                 if (sortedTable.Columns.Count > 6)
                 {
-                    newRow[6] = ""; // No group
+                    newRow[6] = "";
                 }
 
                 sortedTable.Rows.Add(newRow);
@@ -1116,49 +1049,41 @@ namespace FilterV1
             SaveState();
             var modifiedCells = new List<string>();
 
-            // Find all values in columns 5 and 6
             var cellValues = new Dictionary<string, List<(int rowIndex, int colIndex, string adjacentValue)>>();
 
             for (int i = 0; i < _dataTable.Rows.Count; i++)
             {
-                // Check column 5
                 string col5Value = _dataTable.Rows[i][4]?.ToString()?.Trim();
                 if (!string.IsNullOrEmpty(col5Value) && !col5Value.EndsWith("*"))
                 {
                     string col6Adjacent = _dataTable.Rows[i][5]?.ToString()?.Trim() ?? "";
                     if (!cellValues.ContainsKey(col5Value))
                         cellValues[col5Value] = new List<(int, int, string)>();
-                    cellValues[col5Value].Add((i, 4, col6Adjacent)); // column 4 = column 5 (0-indexed)
+                    cellValues[col5Value].Add((i, 4, col6Adjacent));
                 }
 
-                // Check column 6
                 string col6Value = _dataTable.Rows[i][5]?.ToString()?.Trim();
                 if (!string.IsNullOrEmpty(col6Value) && !col6Value.EndsWith("*"))
                 {
                     string col5Adjacent = _dataTable.Rows[i][4]?.ToString()?.Trim() ?? "";
                     if (!cellValues.ContainsKey(col6Value))
                         cellValues[col6Value] = new List<(int, int, string)>();
-                    cellValues[col6Value].Add((i, 5, col5Adjacent)); // column 5 = column 6 (0-indexed)
+                    cellValues[col6Value].Add((i, 5, col5Adjacent));
                 }
             }
 
-            // Process duplicates using the new rule-based approach
             foreach (var kvp in cellValues.Where(x => x.Value.Count > 1))
             {
                 string duplicateValue = kvp.Key;
                 var locations = kvp.Value;
 
-                // Find the location that matches the highest priority rule
                 (int rowIndex, int colIndex, string adjacentValue)? bestLocation = null;
                 int bestPriority = int.MaxValue;
 
                 foreach (var location in locations)
                 {
-                    // Check if this location matches any rule
                     foreach (var rule in _starDupesRules.OrderBy(r => r.Priority))
                     {
-                        // Check if duplicate contains the rule's duplicate pattern
-                        // AND the adjacent cell contains the rule's adjacent pattern
                         if (duplicateValue.Contains(rule.DuplicateContains) &&
                             location.adjacentValue.Contains(rule.AdjacentContains))
                         {
@@ -1167,12 +1092,11 @@ namespace FilterV1
                                 bestPriority = rule.Priority;
                                 bestLocation = location;
                             }
-                            break; // Found a matching rule for this location
+                            break;
                         }
                     }
                 }
 
-                // Mark the best location with "*" if one was found
                 if (bestLocation.HasValue)
                 {
                     _dataTable.Rows[bestLocation.Value.rowIndex][bestLocation.Value.colIndex] = duplicateValue + "*";
@@ -1190,10 +1114,8 @@ namespace FilterV1
             SaveState();
             var modifiedCells = new List<string>();
 
-            // Use provided patterns or default to all stored patterns
             var patterns = patternsToApply ?? _removeRelayPatterns;
 
-            // Go through all cells in the data table
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
@@ -1201,30 +1123,26 @@ namespace FilterV1
                     string cellValue = row[j]?.ToString();
                     if (string.IsNullOrEmpty(cellValue)) continue;
 
-                    // Check if this cell contains any of the remove relay patterns
                     foreach (var pattern in patterns)
                     {
                         if (cellValue.Contains(pattern.ContainsText))
                         {
-                            // Remove this cell
                             modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}");
                             row[j] = string.Empty;
 
-                            // Remove adjacent cell to the LEFT if it exists
                             if (j > 0)
                             {
                                 row[j - 1] = string.Empty;
                                 modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j}");
                             }
 
-                            // Remove adjacent cell to the RIGHT if it exists
                             if (j < _dataTable.Columns.Count - 1)
                             {
                                 row[j + 1] = string.Empty;
                                 modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 2}");
                             }
 
-                            break; // Only apply first matching pattern for this cell
+                            break;
                         }
                     }
                 }
@@ -1241,7 +1159,6 @@ namespace FilterV1
             int totalRows = _dataTable.Rows.Count;
             int reorganizedRows = 0;
 
-            // Check if we have enough columns (at least 6 columns needed for reorganization)
             if (_dataTable.Columns.Count < 6)
             {
                 UpdateGrid("Trenger minst 6 kolonner for reorganisering");
@@ -1250,20 +1167,17 @@ namespace FilterV1
 
             foreach (DataRow row in _dataTable.Rows)
             {
-                // Store original values
-                string col2Original = row[1]?.ToString() ?? ""; // Column 2 (index 1)
-                string col3Original = row[2]?.ToString() ?? ""; // Column 3 (index 2)
-                string col4Original = row[3]?.ToString() ?? ""; // Column 4 (index 3)
-                string col5Original = row[4]?.ToString() ?? ""; // Column 5 (index 4)
-                string col6Original = row[5]?.ToString() ?? ""; // Column 6 (index 5)
+                string col2Original = row[1]?.ToString() ?? "";
+                string col3Original = row[2]?.ToString() ?? "";
+                string col4Original = row[3]?.ToString() ?? "";
+                string col5Original = row[4]?.ToString() ?? "";
+                string col6Original = row[5]?.ToString() ?? "";
 
-                // Apply reorganization:
-                // 5 → 2, 6 → 3, 2 → 4, 3 → 5, 4 → 6
-                row[1] = col5Original; // Column 5 → Column 2
-                row[2] = col6Original; // Column 6 → Column 3
-                row[3] = col2Original; // Column 2 → Column 4
-                row[4] = col3Original; // Column 3 → Column 5
-                row[5] = col4Original; // Column 4 → Column 6
+                row[1] = col5Original;
+                row[2] = col6Original;
+                row[3] = col2Original;
+                row[4] = col3Original;
+                row[5] = col4Original;
 
                 reorganizedRows++;
             }
@@ -1278,7 +1192,6 @@ namespace FilterV1
             SaveState();
             var modifiedCells = new List<string>();
 
-            // Go through all cells in the data table
             foreach (DataRow row in _dataTable.Rows)
             {
                 for (int j = 0; j < _dataTable.Columns.Count; j++)
@@ -1286,15 +1199,13 @@ namespace FilterV1
                     string cellValue = row[j]?.ToString();
                     if (string.IsNullOrEmpty(cellValue)) continue;
 
-                    // Check if this cell exactly matches any conversion rule
                     foreach (var rule in _conversionRules)
                     {
                         if (cellValue.Equals(rule.FromText, StringComparison.Ordinal))
                         {
-                            // Replace with exact match
                             row[j] = rule.ToText;
                             modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}: '{rule.FromText}' → '{rule.ToText}'");
-                            break; // Only apply first matching rule for this cell
+                            break;
                         }
                     }
                 }
@@ -1303,7 +1214,6 @@ namespace FilterV1
             UpdateGrid($"Konvertert {modifiedCells.Count} celler til Durapart format: {string.Join(", ", modifiedCells.Take(5))}{(modifiedCells.Count > 5 ? "..." : "")}");
         }
 
-        // Helper method to get the priority of text (returns 0 if no priority text found)
         private int GetTextPriority(string text)
         {
             if (string.IsNullOrEmpty(text)) return 0;
@@ -1315,7 +1225,7 @@ namespace FilterV1
                     return group.Priority;
                 }
             }
-            return 0; // No priority text found
+            return 0;
         }
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
@@ -1333,13 +1243,6 @@ namespace FilterV1
             UpdateGrid("Siste handling angret");
         }
 
-        /// <summary>
-        /// Intercepts the Delete key in the data preview grid. When the user presses
-        /// Delete to clear cell values, this handler pushes the current state onto
-        /// the undo stack before any modifications occur. This allows the Undo
-        /// function to restore cleared cell values. Without this handler, manual
-        /// edits would not be captured by the undo stack.
-        /// </summary>
         private void ExcelDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Delete)
@@ -1349,7 +1252,6 @@ namespace FilterV1
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
-
         {
             if (_dataTable == null || string.IsNullOrEmpty(_filePath))
             {
@@ -1375,7 +1277,6 @@ namespace FilterV1
 
                         if (int.TryParse(colorIndexStr, out int colorIndex))
                         {
-                            // Alternate colors: odd groups = green, even groups = pink
                             XLColor rowColor = (colorIndex % 2 == 1) ? XLColor.LightGreen : XLColor.LightPink;
                             for (int j = 1; j <= _dataTable.Columns.Count; j++)
                             {
@@ -1391,6 +1292,7 @@ namespace FilterV1
 
                     workbook.SaveAs(_filePath);
                     StatusText.Text = "Fil overskrevet med farger";
+                    _hasUnsavedChanges = false;
                 }
             }
             catch (Exception ex)
@@ -1398,11 +1300,112 @@ namespace FilterV1
                 StatusText.Text = $"Feil ved lagring av fil - {ex.Message}";
             }
         }
+
         private void ProcessRawDataButton_Click(object sender, RoutedEventArgs e)
         {
-            var processWindow = new ProcessRawDataWindow();
+            var processWindow = new ProcessRawDataWindow(filePath =>
+            {
+                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                {
+                    _filePath = filePath;
+                    FilePathText.Text = Path.GetFileName(_filePath);
+                    _undoStack.Clear();
+                    _rowsRemoved = 0;
+                    _removeEqualsApplied = false;
+                    _removeLVApplied = false;
+                    _hasUnsavedChanges = false;
+                    LoadExcelFile();
+                }
+            });
             processWindow.Owner = this;
             processWindow.Show();
+        }
+
+        private void MarkUnmarkedDupesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Ingen fil lastet";
+                return;
+            }
+
+            var window = new MarkUnmarkedDupesWindow(patterns =>
+            {
+                ApplyMarkUnmarkedDupes(patterns);
+            });
+            window.Owner = this;
+            window.ShowDialog();
+        }
+
+        private void ApplyMarkUnmarkedDupes(List<string> patterns)
+        {
+            if (_dataTable == null || patterns.Count == 0) return;
+
+            ExcelDataGrid.Items.Refresh();
+
+            var cellOccurrences = new Dictionary<string, List<(int rowIndex, int colIndex)>>();
+
+            for (int i = 0; i < _dataTable.Rows.Count; i++)
+            {
+                for (int colIdx = 4; colIdx <= 5; colIdx++)
+                {
+                    string cellValue = _dataTable.Rows[i][colIdx]?.ToString()?.Trim() ?? "";
+                    if (string.IsNullOrEmpty(cellValue)) continue;
+
+                    bool matchesPattern = patterns.Any(p => cellValue.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (!matchesPattern) continue;
+
+                    string cleanValue = cellValue.TrimEnd('*');
+
+                    if (!cellOccurrences.ContainsKey(cleanValue))
+                        cellOccurrences[cleanValue] = new List<(int, int)>();
+
+                    cellOccurrences[cleanValue].Add((i, colIdx));
+                }
+            }
+
+            int markedCount = 0;
+            foreach (var kvp in cellOccurrences.Where(x => x.Value.Count > 1))
+            {
+                foreach (var (rowIndex, colIndex) in kvp.Value)
+                {
+                    string cellValue = _dataTable.Rows[rowIndex][colIndex]?.ToString()?.Trim() ?? "";
+                    if (!cellValue.EndsWith("*"))
+                    {
+                        markedCount++;
+                    }
+                }
+            }
+
+            UpdateGrid($"Markerte {markedCount} umerkede duplikater med gul farge");
+            MessageBox.Show($"Markerte {markedCount} umerkede duplikater med gul farge i tabellen.",
+                "Markering fullført", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void AutoFilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataTable == null)
+            {
+                StatusText.Text = "Ingen fil lastet";
+                return;
+            }
+
+            var result = MessageBox.Show(
+                "Dette vil automatisk kjøre følgende filtre:\n\n" +
+                "1. Fjern =+LV+MX+XS\n" +
+                "2. Fjern Duplikater\n" +
+                "3-9. Funksjoner med vinduer (stopper for brukerinput)\n\n" +
+                "Vil du fortsette?",
+                "Auto-Filtrer",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            RemoveAllButton_Click(sender, e);
+            RemoveDupesButton_Click(sender, e);
+
+            StatusText.Text = "Auto-filtrer: Klar for steg 3 (Stigende Tall). Klikk på knappen for å fortsette.";
         }
     }
 

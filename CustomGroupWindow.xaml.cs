@@ -111,16 +111,13 @@ namespace FilterV1
 
             if (newEntries.Count > 0)
             {
-                // Shift existing group priorities down to make room for new entries at the top
-                foreach (var g in _groupDefinitions)
-                {
-                    g.Priority += newEntries.Count;
-                }
+                // Find highest existing priority
+                int maxPriority = _groupDefinitions.Any() ? _groupDefinitions.Max(g => g.Priority) : 0;
 
-                // Assign priorities to the new entries starting from 1
+                // Assign priorities to the new entries starting from maxPriority + 1 (LOWEST priority)
                 for (int i = 0; i < newEntries.Count; i++)
                 {
-                    newEntries[i].Priority = i + 1;
+                    newEntries[i].Priority = maxPriority + i + 1;
                 }
 
                 // Add the new entries to the collection

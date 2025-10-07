@@ -227,45 +227,53 @@ namespace FilterV1
             StatusTextBlock.Text += $"✓ Kopiert {Path.GetFileName(_settings.TemplateFile3)} → {orderNumber} D.xlsx\n\n";
 
             // Step 2: Read raw data from all sheets (column C and K from row 3)
+            // Step 2: Read raw data from all sheets (column C and K from row 3)
             string rawFilePath = Path.Combine(_settings.RawFileLocation, rawFileName);
             var columnCData = new List<string>();
             var columnKData = new List<string>();
 
             StatusTextBlock.Text += $"Leser rådata fra {rawFileName}...\n";
 
-            using (var rawWorkbook = new XLWorkbook(rawFilePath))
+            try
             {
-                int sheetCount = rawWorkbook.Worksheets.Count;
-                StatusTextBlock.Text += $"Fant {sheetCount} sheet(s) i råfilen\n";
-
-                foreach (var sheet in rawWorkbook.Worksheets)
+                using (var rawWorkbook = new XLWorkbook(rawFilePath))
                 {
-                    StatusTextBlock.Text += $"  Prosesserer sheet: {sheet.Name}\n";
+                    int sheetCount = rawWorkbook.Worksheets.Count;
+                    StatusTextBlock.Text += $"Fant {sheetCount} sheet(s) i råfilen\n";
 
-                    // Read column C (index 3) from row 3 onwards
-                    int row = 3;
-                    while (true)
+                    foreach (var sheet in rawWorkbook.Worksheets)
                     {
-                        var cellC = sheet.Cell(row, 3);
-                        string valueC = cellC.GetString().Trim();
-                        if (string.IsNullOrEmpty(valueC))
-                            break;
-                        columnCData.Add(valueC);
-                        row++;
-                    }
+                        StatusTextBlock.Text += $"  Prosesserer sheet: {sheet.Name}\n";
 
-                    // Read column K (index 11) from row 3 onwards
-                    row = 3;
-                    while (true)
-                    {
-                        var cellK = sheet.Cell(row, 11);
-                        string valueK = cellK.GetString().Trim();
-                        if (string.IsNullOrEmpty(valueK))
-                            break;
-                        columnKData.Add(valueK);
-                        row++;
+                        // Read column C (index 3) from row 3 onwards
+                        int row = 3;
+                        while (true)
+                        {
+                            var cellC = sheet.Cell(row, 3);
+                            string valueC = cellC.GetString().Trim();
+                            if (string.IsNullOrEmpty(valueC))
+                                break;
+                            columnCData.Add(valueC);
+                            row++;
+                        }
+
+                        // Read column K (index 11) from row 3 onwards
+                        row = 3;
+                        while (true)
+                        {
+                            var cellK = sheet.Cell(row, 11);
+                            string valueK = cellK.GetString().Trim();
+                            if (string.IsNullOrEmpty(valueK))
+                                break;
+                            columnKData.Add(valueK);
+                            row++;
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Feil ved lesing av råfil: {ex.Message}. Sørg for at filen ikke er åpen i et annet program.");
             }
 
             StatusTextBlock.Text += $"✓ Lest {columnCData.Count} rader fra kolonne C\n";
