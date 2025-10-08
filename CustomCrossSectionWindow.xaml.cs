@@ -45,7 +45,15 @@ namespace FilterV1
 
         private readonly Action<List<CrossRow>> _onApply;
         private readonly string _storeFile;
+        // Holds the master list of all mappings entered by the user.  This collection contains
+        // the actual CrossRow objects which will be persisted and passed back via the callback.
         private ObservableCollection<CrossRow> _rows = new ObservableCollection<CrossRow>();
+        // Holds the current view of rows after search filtering.  Bound to the DataGrid.
+        private ObservableCollection<CrossRow> _filteredRows = new ObservableCollection<CrossRow>();
+        // Tracks the anchor index for shift+arrow multi‑selection.  When null no anchor is set.
+        private int? _selectionAnchorIndex = null;
+        // Stores the current search term so that new entries can be filtered immediately.
+        private string _currentSearchTerm = string.Empty;
 
         /// <summary>
         /// Constructs a new custom cross section window.  If an existing list of rows is provided, it will be
@@ -80,7 +88,12 @@ namespace FilterV1
 
             // Load rows either from the provided list or from persistent storage.
             Load(existing);
-            CrossGrid.ItemsSource = _rows;
+            // Bind the DataGrid to the filtered collection.  This must be set before
+            // invoking FilterRows so that the Items.Refresh call operates on the correct view.
+            CrossGrid.ItemsSource = _filteredRows;
+            // Initially populate the filtered list with all rows.  Subsequent calls to
+            // FilterRows() will update this collection based on the user's search input.
+            FilterRows(string.Empty);
 
             // Handle keyboard shortcuts at Window level
             this.PreviewKeyDown += Window_PreviewKeyDown;
@@ -129,6 +142,11 @@ namespace FilterV1
             {
                 _rows.Clear();
             }
+
+            // Whenever rows are loaded from disk or provided externally, refresh the filtered view
+            // to include all rows by default.  If a search term is currently active it will be
+            // applied in FilterRows().  This call also clears any existing selections and anchors.
+            FilterRows(_currentSearchTerm);
         }
 
         /// <summary>
@@ -230,24 +248,39 @@ namespace FilterV1
             foreach (string line in lines.Reverse())
             {
                 var parts = SplitLine(line);
-                string p5 = parts.Length > 0 ? parts[0].Trim() : string.Empty;
-                string p6 = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                string raw5 = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+                string raw6 = parts.Length > 1 ? parts[1].Trim() : string.Empty;
 
+                if (string.IsNullOrEmpty(raw5) && string.IsNullOrEmpty(raw6))
+                    continue;
+
+                // Strip prefix before the first dash '-' to remove device/prefix identifiers like J02-
+                string Sanitize(string val)
+                {
+                    if (string.IsNullOrWhiteSpace(val)) return string.Empty;
+                    int dash = val.IndexOf('-');
+                    return dash > 0 ? val.Substring(dash + 1).Trim() : val.Trim();
+                }
+                string p5 = Sanitize(raw5);
+                string p6 = Sanitize(raw6);
+
+                // Skip if both sanitized values are empty
                 if (string.IsNullOrEmpty(p5) && string.IsNullOrEmpty(p6))
                     continue;
 
-                // check if row already exists (case insensitive comparison)
+                // check if row already exists (case insensitive comparison) based on sanitized values
                 if (_rows.Any(r => string.Equals(r.Col5Text, p5, StringComparison.OrdinalIgnoreCase) &&
                                    string.Equals(r.Col6Text, p6, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                // Insert new rows with SelectedOption = 0 so they are blank by default (no preassigned tverrsnitt)
+                // Insert new row at the beginning so newest appears on top.  SelectedOption defaulted to 0.
                 _rows.Insert(0, new CrossRow { Col5Text = p5, Col6Text = p6, SelectedOption = 0 });
                 added++;
             }
             if (added > 0)
             {
-                CrossGrid.Items.Refresh();
+                // Refresh the filtered view based on current search term so that new rows appear appropriately
+                FilterRows(_currentSearchTerm);
                 Save();
             }
         }
@@ -267,7 +300,9 @@ namespace FilterV1
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             _rows.Clear();
-            CrossGrid.Items.Refresh();
+            // Clear anchor and filtered list
+            _selectionAnchorIndex = null;
+            FilterRows(_currentSearchTerm);
             Save();
         }
 
@@ -284,9 +319,12 @@ namespace FilterV1
             }
             foreach (var r in selected)
             {
+                // Remove from master list
                 _rows.Remove(r);
             }
-            CrossGrid.Items.Refresh();
+            // Clear anchor and update filtered view
+            _selectionAnchorIndex = null;
+            FilterRows(_currentSearchTerm);
             Save();
         }
 
@@ -297,6 +335,7 @@ namespace FilterV1
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             Save();
+            // Pass back a copy of the master list, not the filtered view
             _onApply(_rows.ToList());
             Close();
         }
@@ -422,65 +461,70 @@ namespace FilterV1
                 return;
             }
 
-            // Handle Up/Down arrow keys for navigation and selection
+            // Handle Up/Down arrow keys for navigation and multi-selection
             if (e.Key == Key.Up || e.Key == Key.Down)
             {
-                // Identify current row index
+                // Determine current index within the filtered view
                 var currentItem = CrossGrid.CurrentItem;
                 int currentIndex = currentItem != null ? CrossGrid.Items.IndexOf(currentItem) : -1;
 
-                // Determine if Shift is pressed (to extend selection)
                 bool shiftPressed = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-
-                // Determine the target index based on arrow key
                 int delta = e.Key == Key.Up ? -1 : 1;
                 int targetIndex = currentIndex + delta;
 
-                // If there is no current item, set the first item as current
-                if (currentIndex < 0 && CrossGrid.Items.Count > 0)
+                // If no current item, select the first item by default
+                if (currentIndex < 0)
                 {
-                    targetIndex = e.Key == Key.Up ? 0 : 0;
+                    if (CrossGrid.Items.Count > 0)
+                    {
+                        currentIndex = 0;
+                        targetIndex = (e.Key == Key.Up ? 0 : 0);
+                    }
                 }
 
-                // Bound the target index within 0 and Count-1
-                if (targetIndex < 0)
+                // Ensure target index stays within bounds
+                if (targetIndex < 0 || targetIndex >= CrossGrid.Items.Count)
                 {
+                    // Prevent leaving the DataGrid when at first/last row
                     e.Handled = true;
                     return;
                 }
-                if (targetIndex >= CrossGrid.Items.Count)
-                {
-                    e.Handled = true;
-                    return;
-                }
 
-                // If Shift is pressed, extend or shrink the selection
                 if (shiftPressed)
                 {
-                    var targetItem = CrossGrid.Items[targetIndex];
-                    if (CrossGrid.SelectedItems.Contains(targetItem))
+                    // When shift is pressed and no anchor exists, set anchor to current index
+                    if (_selectionAnchorIndex == null)
                     {
-                        // If the target is already selected, remove it to shrink selection
-                        CrossGrid.SelectedItems.Remove(targetItem);
-                    }
-                    else
-                    {
-                        // Otherwise add it to extend selection
-                        CrossGrid.SelectedItems.Add(targetItem);
+                        _selectionAnchorIndex = currentIndex >= 0 ? currentIndex : targetIndex;
                     }
 
-                    // Keep the current item where it was and focus back to grid
-                    CrossGrid.CurrentItem = currentItem;
-                    CrossGrid.ScrollIntoView(targetItem);
+                    // Calculate selection range between anchor and target
+                    int anchor = _selectionAnchorIndex ?? targetIndex;
+                    int start = Math.Min(anchor, targetIndex);
+                    int end = Math.Max(anchor, targetIndex);
+
+                    // Clear previous selection and select the contiguous range
+                    CrossGrid.SelectedItems.Clear();
+                    for (int i = start; i <= end; i++)
+                    {
+                        var item = CrossGrid.Items[i];
+                        CrossGrid.SelectedItems.Add(item);
+                    }
+
+                    // Update current item to the newly navigated row
+                    var newCurrent = CrossGrid.Items[targetIndex];
+                    CrossGrid.CurrentItem = newCurrent;
+                    CrossGrid.ScrollIntoView(newCurrent);
                 }
                 else
                 {
-                    // Without shift, just move selection up/down
-                    var targetItem = CrossGrid.Items[targetIndex];
+                    // Without shift, clear anchor and move selection to the target row
+                    _selectionAnchorIndex = null;
+                    var newCurrent = CrossGrid.Items[targetIndex];
                     CrossGrid.SelectedItems.Clear();
-                    CrossGrid.SelectedItems.Add(targetItem);
-                    CrossGrid.CurrentItem = targetItem;
-                    CrossGrid.ScrollIntoView(targetItem);
+                    CrossGrid.SelectedItems.Add(newCurrent);
+                    CrossGrid.CurrentItem = newCurrent;
+                    CrossGrid.ScrollIntoView(newCurrent);
                 }
 
                 CrossGrid.Focus();
@@ -498,36 +542,34 @@ namespace FilterV1
         {
             if (CrossGrid.SelectedItems.Count == 0) return;
 
-            // Lagre hvilke rader som var valgt
+            // Capture selection and current item index based on filtered view
             var selectedRows = CrossGrid.SelectedItems.Cast<CrossRow>().ToList();
             var currentItemIndex = CrossGrid.Items.IndexOf(CrossGrid.CurrentItem);
 
-            // Oppdater verdiene
+            // Assign option to each selected row (updates underlying master list as objects are shared)
             foreach (var row in selectedRows)
             {
                 row.SelectedOption = option;
             }
 
-            // Refresh grid
+            // Refresh the view so that the ComboBox displays the updated option
             CrossGrid.Items.Refresh();
 
-            // Gjenopprett seleksjon og fokus
+            // Restore selection and focus
             CrossGrid.SelectedItems.Clear();
             foreach (var row in selectedRows)
             {
                 CrossGrid.SelectedItems.Add(row);
             }
 
-            // Sett fokus tilbake til samme rad
+            // Restore current item if still valid
             if (currentItemIndex >= 0 && currentItemIndex < CrossGrid.Items.Count)
             {
                 CrossGrid.CurrentItem = CrossGrid.Items[currentItemIndex];
                 CrossGrid.ScrollIntoView(CrossGrid.Items[currentItemIndex]);
             }
 
-            // VIKTIG: Sett fokus tilbake til DataGrid slik at piltaster fungerer
             CrossGrid.Focus();
-
             Save();
         }
 
@@ -536,5 +578,53 @@ namespace FilterV1
         private void SetGauge15_Click(object sender, RoutedEventArgs e) => SetGaugeForSelection(2);
         private void SetGauge25_Click(object sender, RoutedEventArgs e) => SetGaugeForSelection(3);
         private void SetGauge40_Click(object sender, RoutedEventArgs e) => SetGaugeForSelection(4);
+
+        /// <summary>
+        /// Called whenever the text in the search box changes.  Updates the filtered view
+        /// of mappings based on the search term.  Searching is case‑insensitive and
+        /// matches against both column values.  If the search box is cleared all rows
+        /// are displayed.
+        /// </summary>
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            _currentSearchTerm = (sender as TextBox)?.Text ?? string.Empty;
+            FilterRows(_currentSearchTerm);
+        }
+
+        /// <summary>
+        /// Filters the master list (_rows) into the filtered view (_filteredRows) based on
+        /// the provided search term.  Existing selections and the selection anchor are
+        /// cleared to avoid mismatches between the view and underlying data.  After
+        /// filtering the DataGrid is refreshed.
+        /// </summary>
+        /// <param name="searchTerm">The search term entered by the user.</param>
+        private void FilterRows(string searchTerm)
+        {
+            // Clear anchor whenever filtering changes the row order/contents
+            _selectionAnchorIndex = null;
+            _filteredRows.Clear();
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                // When search is empty include all rows in the same order
+                foreach (var row in _rows)
+                {
+                    _filteredRows.Add(row);
+                }
+            }
+            else
+            {
+                string term = searchTerm.Trim();
+                foreach (var row in _rows)
+                {
+                    if ((row.Col5Text != null && row.Col5Text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (row.Col6Text != null && row.Col6Text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        _filteredRows.Add(row);
+                    }
+                }
+            }
+            CrossGrid.Items.Refresh();
+        }
     }
 }
