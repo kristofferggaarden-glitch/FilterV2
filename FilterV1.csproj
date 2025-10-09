@@ -7,6 +7,14 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<ApplicationIcon>Filter_icon-icons.com_53730 (1).ico</ApplicationIcon>
+
+		<!-- NYE LINJER FOR TASKBAR PINNING -->
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AssemblyName>ExcelFilterTool</AssemblyName>
+		<Product>Excel Filter Tool</Product>
+		<Company>Ditt Firmanavn</Company>
+		<Version>2.0.0.0</Version>
+		<FileVersion>2.0.0.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
