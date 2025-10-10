@@ -59,7 +59,7 @@
                            Style="{StaticResource SubtitleText}"
                            Margin="0,0,0,10"/>
 
-                <!-- Search bar -->
+                <!-- Search bar and options editor -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,5,0"
                                Style="{StaticResource DescriptionText}"/>
@@ -67,6 +67,12 @@
                              Style="{StaticResource ModernTextBox}"
                              ToolTip="Filter mappings"
                              TextChanged="SearchTextBox_TextChanged"/>
+                    <!-- Button to edit cross section option definitions -->
+                    <Button x:Name="EditOptionsButton"
+                            Content="Rediger tverrsnitt‑knapper"
+                            Click="EditOptionsButton_Click"
+                            Style="{StaticResource SecondaryButton}"
+                            Width="190" Margin="10,0,0,0"/>
                 </StackPanel>
 
                 <!-- DataGrid displaying mappings -->

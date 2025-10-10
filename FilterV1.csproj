@@ -21,6 +21,9 @@
 		<Content Include="Filter_icon-icons.com_53730 (1).ico" />
 	</ItemGroup>
 
+	<!-- The CrossOptionSettingsWindow.xaml page will be included automatically by the SDK.
+       Removing explicit Page element prevents duplicate Page/Compile errors. -->
+
 	<ItemGroup>
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />

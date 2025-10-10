@@ -290,12 +290,12 @@
                                     Style="{StaticResource GlassButton}"
                                     Grid.Row="3" Grid.Column="1" Content="7. 🎯 Sortering" Margin="3,0,0,5"/>
 
-                            <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" 
-                                    Style="{StaticResource GlassButton}"
-                                    Grid.Row="4" Grid.Column="0" Content="8. Standard Tverrsnitt" Margin="0,0,3,0"/>
+                            <!-- Removed the standard tverrsnitt button as it is no longer needed.  The
+                                 custom cross section button now occupies the entire row and has been
+                                 renumbered accordingly. -->
                             <Button x:Name="CustomCrossSectionButton" Click="CustomCrossSectionButton_Click"
                                     Style="{StaticResource GlassButton}"
-                                    Grid.Row="4" Grid.Column="1" Content="9. Egen Tverrsnitt" Margin="3,0,0,0"/>
+                                    Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="8. Egen Tverrsnitt" Margin="0,0,0,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>

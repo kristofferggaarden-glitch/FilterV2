@@ -45,7 +45,11 @@
         <!-- Groups List -->
         <Border Grid.Row="2" Style="{StaticResource CardPanel}" Margin="0,0,0,15" Padding="15">
             <Grid>
+                <!-- Row 0: Header -->
+                <!-- Row 1: Search bar for filtering groups -->
+                <!-- Row 2: Group list and controls -->
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
@@ -54,13 +58,26 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Header -->
                 <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Defined Groups" 
                          Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
 
-                <ListBox x:Name="GroupsListBox" Grid.Row="1" Grid.Column="0" 
+                <!-- Search bar -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Style="{StaticResource DescriptionText}"/>
+                    <TextBox x:Name="SearchTextBox" Width="200"
+                             Style="{StaticResource ModernTextBox}"
+                             ToolTip="Filter groups"
+                             TextChanged="SearchTextBox_TextChanged"/>
+                </StackPanel>
+
+                <!-- Group list -->
+                <ListBox x:Name="GroupsListBox" Grid.Row="2" Grid.Column="0" 
                          Margin="0,0,15,0" Style="{StaticResource ModernListBox}"/>
 
-                <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Top">
+                <!-- Controls -->
+                <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Top">
                     <Button x:Name="MoveUpButton" Content="Move Up" Click="MoveUpButton_Click" 
                             Style="{StaticResource SecondaryButton}" Width="100" Margin="0,0,0,8" 
                             ToolTip="Increase priority (move up in sort order)"/>

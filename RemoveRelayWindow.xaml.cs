@@ -21,7 +21,10 @@ namespace FilterV1
             _removeRelayPatterns = existingPatterns?.Select(p => new RemoveRelayPatternViewModel
             {
                 ContainsText = p?.ContainsText ?? "",
-                IsEnabled = true // Default to enabled
+                // Default to disabled so that the user must explicitly enable patterns each session.
+                // This corresponds to the requirement that irregular removal patterns should not
+                // remain checked between sessions.
+                IsEnabled = false
             }).ToList() ?? new List<RemoveRelayPatternViewModel>();
 
             RefreshPatternsList();
@@ -82,7 +85,10 @@ namespace FilterV1
                 _removeRelayPatterns.Add(new RemoveRelayPatternViewModel
                 {
                     ContainsText = trimmedLine,
-                    IsEnabled = true // Default to enabled
+                    // New patterns are initially disabled.  Users must opt in by selecting the
+                    // checkbox, aligning with the behaviour that patterns should not be applied
+                    // automatically after being added.
+                    IsEnabled = false
                 });
 
                 addedCount++;

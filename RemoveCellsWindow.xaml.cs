@@ -210,20 +210,13 @@ namespace FilterV1
             var selectedItems = CellPairsGrid.SelectedItems.Cast<CellPair>().ToList();
             if (selectedItems.Any())
             {
-                string message = selectedItems.Count == 1 ?
-                    "Are you sure you want to remove the selected pattern pair?" :
-                    $"Are you sure you want to remove {selectedItems.Count} selected pattern pairs?";
-
-                if (MessageBox.Show(message, "Confirm Removal", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                // Immediately remove the selected pairs without confirmation or success prompts.
+                foreach (var item in selectedItems)
                 {
-                    foreach (var item in selectedItems)
-                    {
-                        _cellPairs.Remove(item);
-                    }
-                    FilterCellPairs(SearchTextBox?.Text ?? string.Empty);
-                    SaveCellPairs();
-                    MessageBox.Show($"Removed {selectedItems.Count} pattern pair(s).", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    _cellPairs.Remove(item);
                 }
+                FilterCellPairs(SearchTextBox?.Text ?? string.Empty);
+                SaveCellPairs();
             }
             else
             {

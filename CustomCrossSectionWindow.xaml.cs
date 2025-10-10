@@ -55,6 +55,13 @@ namespace FilterV1
         // Stores the current search term so that new entries can be filtered immediately.
         private string _currentSearchTerm = string.Empty;
 
+        // Stores the available cross options loaded from persistent storage.  Each option
+        // defines a numeric Id, a user visible label, and three text values corresponding
+        // to the columns that will be filled when the option is applied.  The list does
+        // not include the blank option (Id=0) which is handled separately.  Options are
+        // loaded via LoadCrossOptions() and can be edited from the UI.
+        private List<CrossOption> _crossOptions = new List<CrossOption>();
+
         /// <summary>
         /// Constructs a new custom cross section window.  If an existing list of rows is provided, it will be
         /// used as the initial set of mappings; otherwise the list will be loaded from persistent storage.
@@ -71,20 +78,9 @@ namespace FilterV1
             // Build storage file path under %AppData%\FilterV1
             _storeFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FilterV1", "custom_cross_sections.json");
 
-            // Populate the Tag property on the window with a list of available cross‑section options.
-            // This list is used by the DataGridComboBoxColumn and ensures a single source of truth.
-            // Build list of available cross‑section options.  Value 0 represents a blank / unassigned
-            // tverrsnitt.  A new option (5) is added for RDX4K6.0 with empty sleeve types.  This list
-            // is bound to the DataGridComboBoxColumn in the XAML to provide selectable values.
-            this.Tag = new List<OptionItem>
-            {
-                new OptionItem { Value = 0, Label = string.Empty }, // blank / no cross‑section selected
-                new OptionItem { Value = 1, Label = "1.0 mm²" },
-                new OptionItem { Value = 2, Label = "1.5 mm²" },
-                new OptionItem { Value = 3, Label = "2.5 mm²" },
-                new OptionItem { Value = 4, Label = "4.0 mm²" },
-                new OptionItem { Value = 5, Label = "6.0 mm² (RDX4K6.0)" },
-            };
+            // Load persisted cross options from disk and update the ComboBox list.  The loaded
+            // options include user defined definitions and are supplemented by a blank entry.
+            LoadCrossOptions();
 
             // Load rows either from the provided list or from persistent storage.
             Load(existing);
@@ -97,6 +93,65 @@ namespace FilterV1
 
             // Handle keyboard shortcuts at Window level
             this.PreviewKeyDown += Window_PreviewKeyDown;
+        }
+
+        /// <summary>
+        /// Loads cross section options from persistent storage and rebuilds the ComboBox
+        /// items list.  If no file exists or the file is invalid, default options are
+        /// created and saved.  After loading, any existing SelectedOption values on
+        /// rows that are no longer valid will be reset to 0.  Finally the DataGrid is
+        /// refreshed to reflect updated labels.
+        /// </summary>
+        private void LoadCrossOptions()
+        {
+            _crossOptions = CrossOptionRepository.Load();
+            UpdateOptionItems();
+        }
+
+        /// <summary>
+        /// Updates the Tag property on the window with a list of OptionItem objects based on
+        /// the currently loaded cross options.  A blank option (Value=0) is always added at
+        /// the beginning of the list.  After updating the Tag, any rows referencing
+        /// non‑existent options are reset to blank.  Finally the grid is refreshed.
+        /// </summary>
+        private void UpdateOptionItems()
+        {
+            var items = new List<OptionItem>();
+            // Add blank/none option
+            items.Add(new OptionItem { Value = 0, Label = string.Empty });
+            foreach (var opt in _crossOptions.OrderBy(o => o.Id))
+            {
+                items.Add(new OptionItem { Value = opt.Id, Label = opt.Label });
+            }
+            this.Tag = items;
+
+            // Validate selected options on existing rows
+            foreach (var row in _rows)
+            {
+                if (row.SelectedOption > 0 && !_crossOptions.Any(o => o.Id == row.SelectedOption))
+                {
+                    row.SelectedOption = 0;
+                }
+            }
+            CrossGrid?.Items.Refresh();
+        }
+
+        /// <summary>
+        /// Handles click on the edit options button.  Opens the CrossOptionSettingsWindow and
+        /// updates the internal list when the user saves changes.  After updating, the
+        /// ComboBox items are refreshed.  Selected options on rows that no longer exist
+        /// are automatically reset to blank.
+        /// </summary>
+        private void EditOptionsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var optWindow = new CrossOptionSettingsWindow(_crossOptions, updatedOptions =>
+            {
+                // Update internal list and refresh UI
+                _crossOptions = updatedOptions;
+                UpdateOptionItems();
+            });
+            optWindow.Owner = this;
+            optWindow.ShowDialog();
         }
 
         /// <summary>
@@ -131,10 +186,13 @@ namespace FilterV1
                     {
                         Col5Text = r.Col5Text?.Trim() ?? string.Empty,
                         Col6Text = r.Col6Text?.Trim() ?? string.Empty,
-                        // Ensure SelectedOption is within the supported range 0..5.  If a value is outside
-                        // this range, default it to 0 (blank) rather than forcing it to 1.  This allows
-                        // persisted rows to remain blank or use the new 6 mm option.
-                        SelectedOption = (r.SelectedOption >= 0 && r.SelectedOption <= 5) ? r.SelectedOption : 0
+                        // Validate SelectedOption against the currently loaded cross options.  If the
+                        // stored value is 0 (blank) or matches an existing option Id, retain it;
+                        // otherwise reset to 0 so that invalid references do not persist.
+                        SelectedOption = (r.SelectedOption >= 0 &&
+                                          (r.SelectedOption == 0 || _crossOptions.Any(o => o.Id == r.SelectedOption)))
+                            ? r.SelectedOption
+                            : 0
                     });
                 }
             }
@@ -248,8 +306,31 @@ namespace FilterV1
             foreach (string line in lines.Reverse())
             {
                 var parts = SplitLine(line);
-                string raw5 = parts.Length > 0 ? parts[0].Trim() : string.Empty;
-                string raw6 = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                // Only copy data from column 5 and 6 when pasting from the data preview.
+                // If the pasted line contains six or more columns (tab/semicolon/comma separated), then
+                // assume the first four are columns 1–4 and use elements at index 4 and 5 for col5 and col6.
+                // Otherwise, fall back to using the first and second parts (for two‑column pastes).
+                string raw5 = string.Empty;
+                string raw6 = string.Empty;
+                if (parts.Length >= 6)
+                {
+                    // When there are 6 or more parts, assume columns are in the order 1–6 (and possibly more).
+                    // Column 5 corresponds to index 4 and column 6 to index 5.  Ignore any parts beyond 6.
+                    raw5 = parts[4].Trim();
+                    raw6 = parts[5].Trim();
+                }
+                else if (parts.Length >= 2)
+                {
+                    // For shorter lines (2–5 parts), treat the last two values as columns 5 and 6.  This
+                    // effectively ignores any leading columns beyond the pair of interest.
+                    raw5 = parts[parts.Length - 2].Trim();
+                    raw6 = parts[parts.Length - 1].Trim();
+                }
+                else if (parts.Length == 1)
+                {
+                    raw5 = parts[0].Trim();
+                    raw6 = string.Empty;
+                }
 
                 if (string.IsNullOrEmpty(raw5) && string.IsNullOrEmpty(raw6))
                     continue;
@@ -359,32 +440,71 @@ namespace FilterV1
                 return;
             }
 
-            // Only handle if DataGrid has focus or selected items
+            // Only handle if there is a selection.  Use the same mapping logic as in
+            // CrossGrid_PreviewKeyDown: digits map to options; Ctrl+digits map to higher
+            // options starting at 6.  0 resets to blank.  Ignore presses that refer to
+            // undefined options.
             if (CrossGrid.SelectedItems.Count > 0)
             {
-                if (e.Key == Key.D1 || e.Key == Key.NumPad1)
+                bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+                int option = 0;
+                switch (e.Key)
                 {
-                    SetGaugeForSelection(1);
-                    e.Handled = true;
+                    case Key.D1:
+                    case Key.NumPad1:
+                        option = ctrl ? 6 : 1;
+                        break;
+                    case Key.D2:
+                    case Key.NumPad2:
+                        option = ctrl ? 7 : 2;
+                        break;
+                    case Key.D3:
+                    case Key.NumPad3:
+                        option = ctrl ? 8 : 3;
+                        break;
+                    case Key.D4:
+                    case Key.NumPad4:
+                        option = ctrl ? 9 : 4;
+                        break;
+                    case Key.D5:
+                    case Key.NumPad5:
+                        option = ctrl ? 10 : 5;
+                        break;
+                    case Key.D6:
+                    case Key.NumPad6:
+                        option = 6;
+                        break;
+                    case Key.D7:
+                    case Key.NumPad7:
+                        option = 7;
+                        break;
+                    case Key.D8:
+                    case Key.NumPad8:
+                        option = 8;
+                        break;
+                    case Key.D9:
+                    case Key.NumPad9:
+                        option = 9;
+                        break;
+                    case Key.D0:
+                    case Key.NumPad0:
+                        option = 0;
+                        break;
+                    default:
+                        option = 0;
+                        break;
                 }
-                else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
+                if (option > 0)
                 {
-                    SetGaugeForSelection(2);
-                    e.Handled = true;
+                    if (_crossOptions.Any(o => o.Id == option))
+                    {
+                        SetGaugeForSelection(option);
+                        e.Handled = true;
+                    }
                 }
-                else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
+                else if (option == 0 && (e.Key == Key.D0 || e.Key == Key.NumPad0))
                 {
-                    SetGaugeForSelection(3);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
-                {
-                    SetGaugeForSelection(4);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.D5 || e.Key == Key.NumPad5)
-                {
-                    SetGaugeForSelection(5);
+                    SetGaugeForSelection(0);
                     e.Handled = true;
                 }
             }
@@ -435,28 +555,96 @@ namespace FilterV1
         {
             if (CrossGrid == null) return;
 
-            // Determine if a number key (1-4) was pressed.  We ignore any modifier keys (Ctrl, Shift, Alt)
+            // If the Delete key is pressed and there are selected rows, remove them immediately
+            if (e.Key == Key.Delete)
+            {
+                if (CrossGrid.SelectedItems.Count > 0)
+                {
+                    var toRemove = CrossGrid.SelectedItems.Cast<CrossRow>().ToList();
+                    foreach (var row in toRemove)
+                    {
+                        _rows.Remove(row);
+                    }
+                    // Clear anchor and refresh filtered view so removed rows disappear
+                    _selectionAnchorIndex = null;
+                    FilterRows(_currentSearchTerm);
+                    Save();
+                }
+                e.Handled = true;
+                return;
+            }
+
+            // Determine if a shortcut key corresponds to a cross option.  Without Ctrl,
+            // digits map directly to options 1..9.  With Ctrl, digits map to options
+            // starting at 6 (Ctrl+1=6, Ctrl+2=7, etc.).  The 0 key resets to blank.
             int option = 0;
-            if (e.Key == Key.D1 || e.Key == Key.NumPad1)
-                option = 1;
-            else if (e.Key == Key.D2 || e.Key == Key.NumPad2)
-                option = 2;
-            else if (e.Key == Key.D3 || e.Key == Key.NumPad3)
-                option = 3;
-            else if (e.Key == Key.D4 || e.Key == Key.NumPad4)
-                option = 4;
-            else if (e.Key == Key.D5 || e.Key == Key.NumPad5)
-                option = 5;
+            bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+            switch (e.Key)
+            {
+                case Key.D1:
+                case Key.NumPad1:
+                    option = ctrl ? 6 : 1;
+                    break;
+                case Key.D2:
+                case Key.NumPad2:
+                    option = ctrl ? 7 : 2;
+                    break;
+                case Key.D3:
+                case Key.NumPad3:
+                    option = ctrl ? 8 : 3;
+                    break;
+                case Key.D4:
+                case Key.NumPad4:
+                    option = ctrl ? 9 : 4;
+                    break;
+                case Key.D5:
+                case Key.NumPad5:
+                    option = ctrl ? 10 : 5;
+                    break;
+                case Key.D6:
+                case Key.NumPad6:
+                    option = 6;
+                    break;
+                case Key.D7:
+                case Key.NumPad7:
+                    option = 7;
+                    break;
+                case Key.D8:
+                case Key.NumPad8:
+                    option = 8;
+                    break;
+                case Key.D9:
+                case Key.NumPad9:
+                    option = 9;
+                    break;
+                case Key.D0:
+                case Key.NumPad0:
+                    option = 0;
+                    break;
+                default:
+                    option = 0;
+                    break;
+            }
 
             if (option > 0)
             {
-                // Only assign if there is an active selection
-                if (CrossGrid.SelectedItems.Count > 0)
+                // Only assign if there is an active selection and the option exists
+                if (CrossGrid.SelectedItems.Count > 0 && _crossOptions.Any(o => o.Id == option))
                 {
                     SetGaugeForSelection(option);
                 }
 
                 // Handle the event so the DataGrid doesn't treat the key as cell input
+                e.Handled = true;
+                return;
+            }
+            else if (option == 0 && (e.Key == Key.D0 || e.Key == Key.NumPad0))
+            {
+                // Reset selected rows to blank
+                if (CrossGrid.SelectedItems.Count > 0)
+                {
+                    SetGaugeForSelection(0);
+                }
                 e.Handled = true;
                 return;
             }

@@ -129,12 +129,17 @@ namespace FilterV1
         private bool _removeEqualsApplied;
         private bool _removeLVApplied;
         private List<GroupDefinition> _customGroups;
-        private List<TextFillPattern> _textFillPatterns;
+        // Removed support for custom text-fill patterns since CustomTextFillWindow
+        // has been removed from the project.  Any references to TextFillPattern,
+        // loading/saving of pattern lists and applying those patterns have been
+        // eliminated.  Leaving this declaration commented out so future
+        // developers know it used to exist.
+        // private List<TextFillPattern> _textFillPatterns;
         private List<StarDupesRule> _starDupesRules;
         private List<RemoveRelayPattern> _removeRelayPatterns;
         private List<ConversionRule> _conversionRules;
         private readonly string _settingsFilePath;
-        private readonly string _textFillSettingsFilePath;
+        // private readonly string _textFillSettingsFilePath;
         private readonly string _starDupesSettingsFilePath;
         private readonly string _removeRelaySettingsFilePath;
         private readonly string _conversionRulesSettingsFilePath;
@@ -144,6 +149,12 @@ namespace FilterV1
 
         private List<string> _risingNumberExceptions = new List<string>();
         private List<CustomCrossSectionWindow.CrossRow> _customCrossRows = new List<CustomCrossSectionWindow.CrossRow>();
+
+        // Holds the definitions for custom cross section options.  Loaded from disk when the
+        // application starts and refreshed whenever custom options are edited.  The list
+        // contains one entry per option Id and is used by MapCrossOption to determine the
+        // text written to columns 2–4.
+        private List<CrossOption> _crossOptions = new List<CrossOption>();
         private HashSet<int> _rowsWithCustomCross = new HashSet<int>();
 
         private bool _hasUnsavedChanges = false;
@@ -164,7 +175,7 @@ namespace FilterV1
             Directory.CreateDirectory(appFolder);
 
             _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
-            _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
+            // _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
             _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
             _conversionRulesSettingsFilePath = Path.Combine(appFolder, "ConversionRulesSettings.json");
@@ -174,12 +185,26 @@ namespace FilterV1
             LoadPreferences();
             ApplyPreferences();
 
+            // Load custom cross option definitions.  These definitions map a numeric Id to
+            // the text that should be written into columns 2–4 when applying a custom cross.
+            ReloadCrossOptions();
+
             LoadRisingExceptions();
             LoadCustomGroups();
-            LoadTextFillPatterns();
+            // Custom text fill patterns feature removed – no loading of patterns
             LoadStarDupesRules();
             LoadRemoveRelayPatterns();
             LoadConversionRules();
+        }
+
+        /// <summary>
+        /// Loads cross option definitions from disk.  If no definitions exist, defaults
+        /// are created and persisted.  This method can be called whenever the user edits
+        /// cross options to refresh the mapping used by ApplyCustomCrossSections.
+        /// </summary>
+        private void ReloadCrossOptions()
+        {
+            _crossOptions = CrossOptionRepository.Load();
         }
 
         #region Preferences & Theming
@@ -277,41 +302,6 @@ namespace FilterV1
             }
         }
 
-        private void LoadTextFillPatterns()
-        {
-            try
-            {
-                if (File.Exists(_textFillSettingsFilePath))
-                {
-                    string json = File.ReadAllText(_textFillSettingsFilePath);
-                    _textFillPatterns = JsonSerializer.Deserialize<List<TextFillPattern>>(json) ?? new List<TextFillPattern>();
-                }
-                else
-                {
-                    _textFillPatterns = new List<TextFillPattern>();
-                    SaveTextFillPatterns();
-                }
-            }
-            catch (Exception)
-            {
-                _textFillPatterns = new List<TextFillPattern>();
-            }
-        }
-
-        private void SaveTextFillPatterns()
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(_textFillPatterns, options);
-                File.WriteAllText(_textFillSettingsFilePath, json);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save text fill settings: {ex.Message}", "Save Error",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
 
         private void LoadStarDupesRules()
         {
@@ -940,12 +930,31 @@ namespace FilterV1
         {
             if (_dataTable == null) return;
 
+            // Reload cross option definitions to ensure we use the latest values
+            ReloadCrossOptions();
+
             SaveState();
             _rowsWithCustomCross.Clear();
 
             for (int i = 0; i < _dataTable.Rows.Count; i++)
             {
                 DataRow row = _dataTable.Rows[i];
+                // Skip rows that already contain cross‑section values.  A row is considered to have
+                // an existing tverrsnitt if any of columns 2–4 (index 1–3) are non‑empty.
+                bool hasExistingCross = false;
+                for (int j = 1; j <= 3; j++)
+                {
+                    if (row[j] != null && !string.IsNullOrWhiteSpace(row[j].ToString()))
+                    {
+                        hasExistingCross = true;
+                        break;
+                    }
+                }
+                if (hasExistingCross)
+                {
+                    continue;
+                }
+
                 string col5 = row[4]?.ToString() ?? string.Empty;
                 string col6 = row[5]?.ToString() ?? string.Empty;
 
@@ -978,15 +987,19 @@ namespace FilterV1
 
         private (string c2, string c3, string c4) MapCrossOption(int option)
         {
-            switch (option)
+            // Return blank values for option 0 or invalid ids
+            if (option == 0)
             {
-                case 2: return ("UNIBK1.5", "HYLSE 1.5", "HYLSE 1.5");
-                case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
-                case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
-                case 5: return ("RDX4BK6.0", string.Empty, string.Empty);
-                case 0: return (string.Empty, string.Empty, string.Empty);
-                default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
+                return (string.Empty, string.Empty, string.Empty);
             }
+            // Look up the option in the loaded cross definitions
+            var def = _crossOptions.FirstOrDefault(o => o.Id == option);
+            if (def != null)
+            {
+                return (def.Col2 ?? string.Empty, def.Col3 ?? string.Empty, def.Col4 ?? string.Empty);
+            }
+            // Fallback to blank for unknown ids
+            return (string.Empty, string.Empty, string.Empty);
         }
 
         private void SaveRisingExceptions()
@@ -1056,23 +1069,7 @@ namespace FilterV1
             ApplyReorganizeCells();
         }
 
-        private void CustomTextFillButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_dataTable == null)
-            {
-                StatusText.Text = "Ingen fil lastet";
-                return;
-            }
-
-            var window = new CustomTextFillWindow(_textFillPatterns, patterns =>
-            {
-                _textFillPatterns = patterns;
-                SaveTextFillPatterns();
-                ApplyTextFillPatterns();
-            });
-            window.Owner = this;
-            window.ShowDialog();
-        }
+        // CustomTextFillButton_Click removed along with CustomTextFillWindow.
 
         private void StarDupesButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1110,53 +1107,7 @@ namespace FilterV1
             window.ShowDialog();
         }
 
-        private void ApplyTextFillPatterns()
-        {
-            if (_dataTable == null) return;
-
-            SaveState();
-            var modifiedRows = new List<int>();
-
-            for (int i = 0; i < _dataTable.Rows.Count; i++)
-            {
-                if (_rowsWithCustomCross.Contains(i))
-                    continue;
-
-                DataRow row = _dataTable.Rows[i];
-                string col5Value = row[4]?.ToString()?.Trim() ?? string.Empty;
-                string col6Value = row[5]?.ToString()?.Trim() ?? string.Empty;
-
-                foreach (var pattern in _textFillPatterns.OrderBy(p => p.Priority))
-                {
-                    if (!string.IsNullOrEmpty(pattern.ContainsText) &&
-                        ((col5Value.IndexOf(pattern.ContainsText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                         (col6Value.IndexOf(pattern.ContainsText, StringComparison.OrdinalIgnoreCase) >= 0)))
-                    {
-                        int rowIndex = i + 1;
-                        var (col2, col3, col4) = GetOptionValues(pattern.SelectedOption);
-                        row[1] = col2;
-                        row[2] = col3;
-                        row[3] = col4;
-                        modifiedRows.Add(rowIndex);
-                        break;
-                    }
-                }
-            }
-
-            UpdateGrid($"Anvendt tekst utfylling");
-        }
-
-        private (string col2, string col3, string col4) GetOptionValues(int option)
-        {
-            switch (option)
-            {
-                case 1: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
-                case 2: return ("UNIBK1.5", "HYLSE 1.5", "HYLSE 1.5");
-                case 3: return ("UNIBK2.5", "HYLSE 2.5", "HYLSE 2.5");
-                case 4: return ("UNIBK4.0", "HYLSE 4.0", "HYLSE 4.0");
-                default: return ("UNIBK1.0", "HYLSE 1.0", "HYLSE 1.0");
-            }
-        }
+        // ApplyTextFillPatterns and GetOptionValues removed as part of custom text fill removal.
 
         private void ApplyCustomSort()
         {

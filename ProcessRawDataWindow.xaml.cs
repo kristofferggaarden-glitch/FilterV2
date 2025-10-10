@@ -36,6 +36,12 @@ namespace FilterV1
             _allRawFiles = new List<string>();
             LoadSettings();
             UpdateUI();
+
+            // When the order number changes, automatically update the search box with the base part
+            // (the portion before any dash) so the user doesn't have to retype it under step 3.  This
+            // event is registered after controls are initialized to avoid null references.
+            OrderNumberTextBox.TextChanged += OrderNumberTextBox_TextChanged;
+
             LoadRawFiles();
         }
 
@@ -80,6 +86,15 @@ namespace FilterV1
             RawFileLocationTextBox.Text = string.IsNullOrEmpty(_settings.RawFileLocation)
                 ? "Ikke valgt"
                 : _settings.RawFileLocation;
+
+            // Populate the target folder text box from the last used folder if available.  When
+            // nothing has been saved the field will remain blank, allowing the user to select a
+            // destination folder manually.  This persists across sessions so repeated runs do not
+            // require re‑selecting the same path.
+            if (!string.IsNullOrWhiteSpace(_settings.LastTargetFolder) && Directory.Exists(_settings.LastTargetFolder))
+            {
+                TargetFolderTextBox.Text = _settings.LastTargetFolder;
+            }
         }
 
         private void LoadRawFiles()
@@ -149,6 +164,12 @@ namespace FilterV1
             if (dialog.ShowDialog() == true)
             {
                 TargetFolderTextBox.Text = dialog.SelectedPath;
+                // Persist the selected target folder so it is remembered between sessions.  This
+                // simplifies subsequent runs by automatically populating the path when the window
+                // is opened.  Save the settings immediately to avoid losing the value if the
+                // application closes unexpectedly.
+                _settings.LastTargetFolder = dialog.SelectedPath;
+                SaveSettings();
             }
         }
 
@@ -201,7 +222,30 @@ namespace FilterV1
 
             try
             {
-                ProcessRawData(TargetFolderTextBox.Text, orderNumber, _selectedRawFile);
+                // Create a subfolder based on the base part of the order number (before any dash).
+                string baseNumber = orderNumber;
+                int dashIndex = orderNumber.IndexOf('-');
+                if (dashIndex > 0)
+                {
+                    baseNumber = orderNumber.Substring(0, dashIndex);
+                }
+
+                // Determine and create the final destination folder.  This folder is a child of the
+                // selected target folder and is named after the base order number.  Creating the
+                // directory here ensures subsequent file operations do not fail on a missing folder.
+                string subFolder = System.IO.Path.Combine(TargetFolderTextBox.Text, baseNumber);
+                try
+                {
+                    System.IO.Directory.CreateDirectory(subFolder);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Kunne ikke opprette mappe '{subFolder}': {ex.Message}", "Mappefeil",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                ProcessRawData(subFolder, orderNumber, _selectedRawFile);
             }
             catch (Exception ex)
             {
@@ -391,6 +435,37 @@ namespace FilterV1
         {
             Close();
         }
+
+        /// <summary>
+        /// When the order number textbox changes, automatically populate the search box with the base
+        /// portion of the order number (the part before any dash).  This allows the user to simply
+        /// enter the full order number once and immediately filter the raw file list without
+        /// retyping the base number.  The caret is moved to the end of the search box so further
+        /// typing continues to append to the base.
+        /// </summary>
+        private void OrderNumberTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string order = OrderNumberTextBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(order))
+            {
+                SearchTextBox.Text = string.Empty;
+                return;
+            }
+            string basePart = order;
+            int dash = order.IndexOf('-');
+            if (dash > 0)
+            {
+                basePart = order.Substring(0, dash);
+            }
+            // Only update if the search box does not already have the same basePart to avoid
+            // interfering with user modifications.  Using IndexOf ensures that additional
+            // characters typed by the user are preserved once the base portion has been set.
+            if (!SearchTextBox.Text.Equals(basePart, StringComparison.Ordinal))
+            {
+                SearchTextBox.Text = basePart;
+                SearchTextBox.CaretIndex = SearchTextBox.Text.Length;
+            }
+        }
     }
 
     public class RawDataSettings
@@ -399,5 +474,10 @@ namespace FilterV1
         public string TemplateFile1 { get; set; } = ""; // Fil som får data (F)
         public string TemplateFile2 { get; set; } = ""; // 4. Nord Ledningsliste - mal (N)
         public string TemplateFile3 { get; set; } = ""; // 3. Durapart ledningsliste - mal (D)
+
+        // Stores the last target folder used when processing raw data.  Persisting this value
+        // allows the user to avoid re‑selecting the destination folder each time.  When not set
+        // or empty, the target folder text box will remain blank until the user chooses one.
+        public string LastTargetFolder { get; set; } = "";
     }
 }
