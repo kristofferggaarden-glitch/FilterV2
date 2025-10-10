@@ -3,29 +3,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:FilterV1"
         Title="Excel Filter Tool" 
-        Height="800" Width="1400"
+        Height="900" Width="1600"
         WindowStartupLocation="CenterScreen"
-        MinHeight="700" MinWidth="1200"
-        Background="Transparent">
+        MinHeight="800" MinWidth="1400"
+        Background="Transparent"
+        x:Name="MainWin">
 
     <Window.Resources>
         <local:GroupConverter x:Key="GroupConverter" />
 
         <!-- Glassmorphism Button Style -->
         <Style x:Key="GlassButton" TargetType="Button">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="White" Opacity="0.1"/>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{Binding ElementName=MainWin, Path=ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{Binding ElementName=MainWin, Path=TextBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush">
                 <Setter.Value>
                     <SolidColorBrush Color="White" Opacity="0.2"/>
                 </Setter.Value>
             </Setter>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -33,7 +30,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="border" 
                                 Background="{TemplateBinding Background}" 
-                                CornerRadius="12"
+                                CornerRadius="10"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 BorderBrush="{TemplateBinding BorderBrush}">
                             <Border.Effect>
@@ -41,30 +38,14 @@
                             </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" 
                                             VerticalAlignment="Center"
-                                            Margin="15,12"/>
+                                            Margin="10,6"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background">
-                                    <Setter.Value>
-                                        <SolidColorBrush Color="White" Opacity="0.2"/>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="border" Property="Background" Value="{Binding ElementName=MainWin, Path=ButtonHoverBrush}"/>
                                 <Setter TargetName="border" Property="Effect">
                                     <Setter.Value>
                                         <DropShadowEffect ShadowDepth="3" BlurRadius="15" Opacity="0.3" Direction="270"/>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter Property="RenderTransform">
-                                    <Setter.Value>
-                                        <TranslateTransform Y="-2"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="RenderTransform">
-                                    <Setter.Value>
-                                        <TranslateTransform Y="0"/>
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -74,33 +55,17 @@
             </Setter>
         </Style>
 
-        <!-- Primary Glass Button -->
-        <Style x:Key="PrimaryGlassButton" TargetType="Button" BasedOn="{StaticResource GlassButton}">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#99667eea" Offset="0"/>
-                        <GradientStop Color="#99764ba2" Offset="1"/>
-                    </LinearGradientBrush>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="BorderBrush">
-                <Setter.Value>
-                    <SolidColorBrush Color="White" Opacity="0.3"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- Success Glass Button -->
         <Style x:Key="SuccessGlassButton" TargetType="Button" BasedOn="{StaticResource GlassButton}">
             <Setter Property="Background">
                 <Setter.Value>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#9911998e" Offset="0"/>
-                        <GradientStop Color="#9938ef7d" Offset="1"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=SuccessBrush.(SolidColorBrush.Color)}" Offset="0"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=SuccessBrush.(SolidColorBrush.Color)}" Offset="1"/>
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <!-- Danger Glass Button -->
@@ -108,11 +73,12 @@
             <Setter Property="Background">
                 <Setter.Value>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#99ff416c" Offset="0"/>
-                        <GradientStop Color="#99ff4b2b" Offset="1"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=DangerBrush.(SolidColorBrush.Color)}" Offset="0"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=DangerBrush.(SolidColorBrush.Color)}" Offset="1"/>
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <!-- Upload Button -->
@@ -120,16 +86,12 @@
             <Setter Property="Background">
                 <Setter.Value>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#99ff6b6b" Offset="0"/>
-                        <GradientStop Color="#99ff8e8e" Offset="1"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=AccentBrush.(SolidColorBrush.Color)}" Offset="0"/>
+                        <GradientStop Color="{Binding ElementName=MainWin, Path=AccentBrush.(SolidColorBrush.Color)}" Offset="1"/>
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect ShadowDepth="2" BlurRadius="15" Color="#ff6b6b" Opacity="0.3" Direction="270"/>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
 
         <!-- Glass Card Style -->
@@ -155,97 +117,112 @@
     </Window.Resources>
 
     <!-- Main Background -->
-    <Grid Margin="0,0,0,-178">
+    <Grid>
         <Grid.Background>
             <RadialGradientBrush x:Name="BackgroundBrush" GradientOrigin="0.3,0.3">
-                <GradientStop Color="#667eea" Offset="0"/>
-                <GradientStop Color="#764ba2" Offset="1"/>
+                <GradientStop Color="{Binding ElementName=MainWin, Path=BackgroundColor}" Offset="0"/>
+                <GradientStop Color="{Binding ElementName=MainWin, Path=BackgroundColor}" Offset="1"/>
             </RadialGradientBrush>
         </Grid.Background>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto" MinHeight="80.62"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header Section -->
-        <Border Grid.Row="0" Style="{StaticResource GlassCard}" Margin="20,20,20,20" Padding="30,20">
+        <!-- Header Section - Kompakt -->
+        <Border Grid.Row="0" Style="{StaticResource GlassCard}" Margin="20,20,20,10" Padding="20,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Logo Section -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock FontSize="32" Margin="0,0,15,0" VerticalAlignment="Center">
-                        <TextBlock.Text>📊</TextBlock.Text>
-                        <TextBlock.RenderTransform>
-                            <ScaleTransform x:Name="LogoScale" ScaleX="1" ScaleY="1"/>
-                        </TextBlock.RenderTransform>
-                        <TextBlock.Triggers>
-                            <EventTrigger RoutedEvent="Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimation Storyboard.TargetName="LogoScale"
-                                                       Storyboard.TargetProperty="ScaleX"
-                                                       From="1" To="1.05" Duration="0:0:2" AutoReverse="True"/>
-                                        <DoubleAnimation Storyboard.TargetName="LogoScale"
-                                                       Storyboard.TargetProperty="ScaleY"
-                                                       From="1" To="1.05" Duration="0:0:2" AutoReverse="True"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </TextBlock.Triggers>
-                    </TextBlock>
-                    <TextBlock Text="Excel Filter Tool" FontSize="28" FontWeight="Bold" VerticalAlignment="Center">
-                        <TextBlock.Foreground>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                <GradientStop Color="#fff" Offset="0"/>
-                                <GradientStop Color="#f0f0f0" Offset="1"/>
-                            </LinearGradientBrush>
-                        </TextBlock.Foreground>
-                    </TextBlock>
+                    <TextBlock Text="📊" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Excel Filter Tool" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" 
+                               Foreground="{Binding ElementName=MainWin, Path=TextBrush}"/>
                 </StackPanel>
 
                 <!-- File Info -->
-                <Border Grid.Column="1" 
-                        BorderThickness="1" 
-                        CornerRadius="25" 
-                        Padding="20,10" 
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        MinWidth="300">
+                <Border Grid.Column="1" BorderThickness="1" CornerRadius="20" 
+                        Padding="15,6" HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="250">
                     <Border.Background>
                         <SolidColorBrush Color="White" Opacity="0.1"/>
                     </Border.Background>
                     <Border.BorderBrush>
                         <SolidColorBrush Color="White" Opacity="0.2"/>
                     </Border.BorderBrush>
-                    <TextBlock x:Name="FilePathText" 
-                             Text="Ingen fil lastet" 
-                             Foreground="White"
-                             FontSize="14"
-                             TextAlignment="Center"
-                             VerticalAlignment="Center"/>
+                    <TextBlock x:Name="FilePathText" Text="Ingen fil lastet" 
+                               Foreground="{Binding ElementName=MainWin, Path=TextBrush}"
+                               FontSize="12" TextAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
+                <!-- Settings Button -->
+                <Button Grid.Column="2" x:Name="SettingsButton" 
+                        Click="SettingsButton_Click" 
+                        Content="⚙️ Innstillinger" 
+                        Style="{StaticResource GlassButton}"
+                        Width="120" Height="40" Margin="0,0,10,0"/>
+
                 <!-- Upload Button -->
-                <Button Grid.Column="2" x:Name="UploadButton" 
+                <Button Grid.Column="3" x:Name="UploadButton" 
                         Click="UploadButton_Click" 
                         Content="📁 Last opp Excel" 
                         Style="{StaticResource UploadButton}"
-                        Width="140"
-                        FontSize="14" Margin="0,3,0,15"/>
+                        Width="140" Height="40"/>
             </Grid>
         </Border>
 
-        <!-- Main Content Area -->
-        <Grid Grid.Row="1" Margin="0,0,0,1">
+        <!-- Stats Row - Kompakt -->
+        <Grid Grid.Row="1" Margin="20,0,20,8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="400"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Total Rader -->
+            <Border Grid.Column="0" Style="{StaticResource GlassCard}" Margin="0,0,5,0" Padding="10,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="📊" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Rader" FontSize="9" Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.6"/>
+                        <TextBlock x:Name="TotalRowsText" Text="0" FontSize="16" FontWeight="Bold" 
+                                 Foreground="{Binding ElementName=MainWin, Path=AccentBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Fjernet -->
+            <Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="5,0,0,0" Padding="10,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🗑️" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Fjernet" FontSize="9" Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.6"/>
+                        <TextBlock x:Name="RemovedRowsText" Text="0" FontSize="16" FontWeight="Bold" 
+                                 Foreground="{Binding ElementName=MainWin, Path=DangerBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="2" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -253,28 +230,24 @@
             <StackPanel Grid.Column="0" Margin="20,0,10,0">
 
                 <!-- Quick Actions Card -->
-                <!-- Quick Actions Card -->
-                <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
+                <Border Style="{StaticResource GlassCard}" Padding="15" Margin="0,0,0,8">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Border Width="3" Height="16" CornerRadius="2" Margin="0,0,8,0">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#ff6b6b" Offset="0"/>
-                                        <GradientStop Color="#4ecdc4" Offset="1"/>
+                                        <GradientStop Color="{Binding ElementName=MainWin, Path=AccentBrush.(SolidColorBrush.Color)}" Offset="0"/>
+                                        <GradientStop Color="{Binding ElementName=MainWin, Path=SuccessBrush.(SolidColorBrush.Color)}" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                             </Border>
-                            <TextBlock Text="🚀 Hurtighandlinger" FontSize="18" FontWeight="SemiBold" 
-                                     Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock Text="🚀 Hurtighandlinger" FontSize="13" FontWeight="SemiBold" 
+                                     Foreground="{Binding ElementName=MainWin, Path=TextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <Button x:Name="AutoFilterButton" 
-                                Click="AutoFilterButton_Click" 
+                        <Button x:Name="AutoFilterButton" Click="AutoFilterButton_Click" 
                                 Style="{StaticResource SuccessGlassButton}"
-                                Content="⚡ Auto-Filtrer (Kjør Alt)"
-                                Margin="0,0,0,10"
-                                HorizontalAlignment="Stretch"/>
+                                Content="⚡ Auto-Filtrer (Kjør Alt)" Margin="0,0,0,6" HorizontalAlignment="Stretch"/>
 
                         <Grid>
                             <Grid.RowDefinitions>
@@ -289,416 +262,225 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Button x:Name="RemoveAllButton" 
-                                    Click="RemoveAllButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="0" Grid.Column="0"
-                                    Content="1. Fjern =+LV+MX+XS" 
-                                    Margin="0,0,5,10"/>
+                            <Button x:Name="RemoveAllButton" Click="RemoveAllButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="0" Grid.Column="0" Content="1. Fjern =+LV+MX+XS" Margin="0,0,3,5"/>
+                            <Button x:Name="RemoveDupesButton" Click="RemoveDupesButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="0" Grid.Column="1" Content="2. Fjern Duplikater" Margin="3,0,0,5"/>
 
-                            <Button x:Name="RemoveDupesButton" 
-                                    Click="RemoveDupesButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="0" Grid.Column="1"
-                                    Content="2. Fjern Duplikater"
-                                    Margin="5,0,0,10"/>
+                            <Button x:Name="RemoveRisingNumbersButton" Click="RemoveRisingNumbersButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="1" Grid.Column="0" Content="3. Stigende Tall" Margin="0,0,3,5"/>
+                            <Button x:Name="StarDupesButton" Click="StarDupesButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="1" Grid.Column="1" Content="4. ⭐ Stjerne Dupes" Margin="3,0,0,5"/>
 
-                            <Button x:Name="RemoveRisingNumbersButton" 
-                                    Click="RemoveRisingNumbersButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="1" Grid.Column="0"
-                                    Content="3. Stigende Tall"
-                                    Margin="0,0,5,10"/>
+                            <Button x:Name="MarkUnmarkedDupesButton" Click="MarkUnmarkedDupesButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="2" Grid.Column="0" Content="4b. Marker Dupes" Margin="0,0,3,5"/>
+                            <Button x:Name="RemoveCellsButton" Click="RemoveDefinedCellsButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="2" Grid.Column="1" Content="5. ✂️ Fjern Celler" Margin="3,0,0,5"/>
 
-                            <Button x:Name="StarDupesButton" 
-                                    Click="StarDupesButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="1" Grid.Column="1"
-                                    Content="4. ⭐ Stjerne Duplikater"
-                                    Margin="5,0,0,10"/>
+                            <Button x:Name="RemoveRelayButton" Click="RemoveRelayButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="3" Grid.Column="0" Content="6. 🔌 Uregelmessig" Margin="0,0,3,5"/>
+                            <Button x:Name="SortButton" Click="SortButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="3" Grid.Column="1" Content="7. 🎯 Sortering" Margin="3,0,0,5"/>
 
-                            <Button x:Name="MarkUnmarkedDupesButton" 
-                                    Click="MarkUnmarkedDupesButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="2" Grid.Column="0"
-                                    Content="4b. Marker Umerkede Dupes"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="RemoveCellsButton" 
-                                    Click="RemoveDefinedCellsButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="2" Grid.Column="1"
-                                    Content="5. ✂️ Fjern Celler"
-                                    Margin="5,0,0,10"/>
-
-                            <Button x:Name="RemoveRelayButton" 
-                                    Click="RemoveRelayButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="3" Grid.Column="0"
-                                    Content="6. 🔌 Uregelmessig Fjerning"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="SortButton" 
-                                    Click="SortButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="3" Grid.Column="1"
-                                    Content="7. 🎯 Egendefinert Sortering"
-                                    Margin="5,0,0,10"/>
-
-                            <Button x:Name="CustomTextFillButton" 
-                                    Click="CustomTextFillButton_Click" 
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="4" Grid.Column="0"
-                                    Content="8. Standard Tverrsnitt"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="CustomCrossSectionButton"
-                                    Click="CustomCrossSectionButton_Click"
-                                    Style="{StaticResource PrimaryGlassButton}"
-                                    Grid.Row="4" Grid.Column="1"
-                                    Content="9. Egendefinert Tverrsnitt"
-                                    Margin="5,0,0,10"/>
+                            <Button x:Name="CustomTextFillButton" Click="CustomTextFillButton_Click" 
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="4" Grid.Column="0" Content="8. Standard Tverrsnitt" Margin="0,0,3,0"/>
+                            <Button x:Name="CustomCrossSectionButton" Click="CustomCrossSectionButton_Click"
+                                    Style="{StaticResource GlassButton}"
+                                    Grid.Row="4" Grid.Column="1" Content="9. Egen Tverrsnitt" Margin="3,0,0,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- NEW: Process Raw Data Card -->
-                <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
+                <!-- Process Raw Data Card -->
+                <Border Style="{StaticResource GlassCard}" Padding="15" Margin="0,0,0,8">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#ff6b6b" Offset="0"/>
-                                        <GradientStop Color="#4ecdc4" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
-                            <TextBlock Text="📊 Rådata Prosessering" FontSize="18" FontWeight="SemiBold" 
-                                     Foreground="White" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Border Width="3" Height="16" CornerRadius="2" Margin="0,0,8,0" Background="{Binding ElementName=MainWin, Path=SuccessBrush}"/>
+                            <TextBlock Text="📊 Rådata Prosessering" FontSize="13" FontWeight="SemiBold" 
+                                     Foreground="{Binding ElementName=MainWin, Path=TextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-
-                        <Button x:Name="ProcessRawDataButton" 
-                                Click="ProcessRawDataButton_Click" 
+                        <Button x:Name="ProcessRawDataButton" Click="ProcessRawDataButton_Click" 
                                 Style="{StaticResource SuccessGlassButton}"
-                                Content="🚀 Prosesser Rådata"
-                                HorizontalAlignment="Stretch"
-                                Padding="15,12"/>
+                                Content="🚀 Prosesser Rådata" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Additional Operations Card -->
-                <Border Style="{StaticResource GlassCard}" Padding="25" Margin="0,0,0,15">
+                <Border Style="{StaticResource GlassCard}" Padding="15" Margin="0,0,0,8">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#ff6b6b" Offset="0"/>
-                                        <GradientStop Color="#4ecdc4" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
-                            <TextBlock Text="🛠️ Tilleggsfunksjoner" FontSize="18" FontWeight="SemiBold" 
-                                     Foreground="White" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Border Width="3" Height="16" CornerRadius="2" Margin="0,0,8,0" Background="Orange"/>
+                            <TextBlock Text="🛠️ Tilleggsfunksjoner" FontSize="13" FontWeight="SemiBold" 
+                                     Foreground="{Binding ElementName=MainWin, Path=TextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
-                            <Button x:Name="ReorganizeCellsButton" 
-                                    Click="ReorganizeCellsButton_Click" 
+                            <Button x:Name="ReorganizeCellsButton" Click="ReorganizeCellsButton_Click" 
                                     Style="{StaticResource GlassButton}"
-                                    Grid.Column="0"
-                                    Content="🔄 Reorganiser"
-                                    Margin="0,0,5,10"/>
-
-                            <Button x:Name="ConvertToDurapartButton" 
-                                    Click="ConvertToDurapartButton_Click" 
+                                    Grid.Column="0" Content="🔄 Reorganiser" Margin="0,0,3,0"/>
+                            <Button x:Name="ConvertToDurapartButton" Click="ConvertToDurapartButton_Click" 
                                     Style="{StaticResource GlassButton}"
-                                    Grid.Column="1"
-                                    Content="🔀 Konverter til Durapart"
-                                    Margin="5,0,0,10"/>
+                                    Grid.Column="1" Content="🔀 Konverter til Durapart" Margin="3,0,0,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <!-- Controls Card -->
-                <Border Style="{StaticResource GlassCard}" Padding="25">
+                <Border Style="{StaticResource GlassCard}" Padding="15">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#ff6b6b" Offset="0"/>
-                                        <GradientStop Color="#4ecdc4" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                            </Border>
-                            <TextBlock Text="🛠️ Kontroller" FontSize="18" FontWeight="SemiBold" 
-                                     Foreground="White" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <Border Width="3" Height="16" CornerRadius="2" Margin="0,0,8,0" Background="{Binding ElementName=MainWin, Path=DangerBrush}"/>
+                            <TextBlock Text="🛠️ Kontroller" FontSize="13" FontWeight="SemiBold" 
+                                     Foreground="{Binding ElementName=MainWin, Path=TextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
-                            <Button x:Name="UndoButton" 
-                                    Click="UndoButton_Click" 
+                            <Button x:Name="UndoButton" Click="UndoButton_Click" 
                                     Style="{StaticResource DangerGlassButton}"
-                                    Grid.Column="0"
-                                    Content="↩️ Angre"
-                                    Margin="0,0,5,0"/>
-
-                            <Button x:Name="SaveButton" 
-                                    Click="SaveButton_Click" 
+                                    Grid.Column="0" Content="↩️ Angre" Margin="0,0,3,0"/>
+                            <Button x:Name="SaveButton" Click="SaveButton_Click" 
                                     Style="{StaticResource SuccessGlassButton}"
-                                    Grid.Column="1"
-                                    Content="💾 Lagre"
-                                    Margin="5,0,0,0"/>
+                                    Grid.Column="1" Content="💾 Lagre" Margin="3,0,0,0"/>
                         </Grid>
                     </StackPanel>
                 </Border>
             </StackPanel>
 
-            <!-- Data Area (Right Side) -->
-            <!-- Erstatt Data Area (Right Side) seksjonen i MainWindow.xaml -->
-            <!-- Fra linje ~570 til ~695 -->
+            <!-- Data Area (Right Side) - STØRRE -->
+            <Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="10,0,20,0" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-            <!-- Data Area (Right Side) -->
-            <!-- Erstatt Data Area (Right Side) seksjonen i MainWindow.xaml -->
-            <!-- Fra linje ~570 til ~695 -->
+                    <!-- Data Header -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Border Width="3" Height="18" CornerRadius="2" Margin="0,0,8,0" Background="{Binding ElementName=MainWin, Path=AccentBrush}"/>
+                        <TextBlock Text="📋 Data Forhåndsvisning" FontSize="16" FontWeight="SemiBold" 
+                                 Foreground="{Binding ElementName=MainWin, Path=TextBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="RowCountText" Text="0 rader" HorizontalAlignment="Right"
+                                 FontSize="12" Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.6" 
+                                 Margin="20,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
 
-            <!-- Data Area (Right Side) -->
-            <!-- Erstatt Data Area (Right Side) seksjonen i MainWindow.xaml -->
-<!-- Fra linje ~570 til ~695 -->
+                    <!-- Kompakt Search Bar -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,8">
+                        <TextBlock Text="🔍" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0" 
+                                 Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.7"/>
+                        <Border Background="White" CornerRadius="6" Padding="0">
+                            <TextBox x:Name="DataSearchTextBox" Width="180" Height="26"
+                                     BorderThickness="0" Background="Transparent" Foreground="Black"
+                                     VerticalContentAlignment="Center" TextChanged="DataSearchTextBox_TextChanged"
+                                     FontSize="11" Padding="8,4"/>
+                        </Border>
+                        <TextBlock x:Name="SearchResultsText" Text="" 
+                                 Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.6"
+                                 FontSize="10" VerticalAlignment="Center" Margin="6,0,6,0"/>
+                        <Button x:Name="ClearSearchButton" Content="✕" Click="ClearSearchButton_Click"
+                                Style="{StaticResource GlassButton}" Width="26" Height="26" Padding="0" FontSize="10"/>
+                    </StackPanel>
 
-<!-- Data Area (Right Side) -->
-<Border Grid.Column="1" Style="{StaticResource GlassCard}" Margin="10,0,20,0" Padding="25">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+                    <!-- Data Preview Area -->
+                    <Border Grid.Row="2" BorderThickness="2" CornerRadius="12" Padding="15">
+                        <Border.BorderBrush>
+                            <SolidColorBrush Color="White" Opacity="0.2"/>
+                        </Border.BorderBrush>
+                        <Border.Background>
+                            <SolidColorBrush Color="Black" Opacity="0.2"/>
+                        </Border.Background>
 
-        <!-- Data Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-            <Border Width="4" Height="20" CornerRadius="2" Margin="0,0,10,0">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Color="#ff6b6b" Offset="0"/>
-                        <GradientStop Color="#4ecdc4" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
+                        <Grid>
+                            <!-- Empty State -->
+                            <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible">
+                                <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"
+                                         Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.5"/>
+                                <TextBlock Text="Last opp Excel-fil for å starte" FontSize="14" HorizontalAlignment="Center"
+                                         Foreground="{Binding ElementName=MainWin, Path=TextBrush}" Opacity="0.5"/>
+                            </StackPanel>
+
+                            <!-- DataGrid -->
+                            <DataGrid x:Name="ExcelDataGrid" AutoGenerateColumns="True" CanUserAddRows="False"
+                                      GridLinesVisibility="All" HorizontalGridLinesBrush="#33FFFFFF"
+                                      VerticalGridLinesBrush="#33FFFFFF" Background="Transparent"
+                                      BorderThickness="0" 
+                                      Foreground="{Binding ElementName=MainWin, Path=TextBrush}" 
+                                      Visibility="Collapsed"
+                                      FontSize="{Binding ElementName=MainWin, Path=DataGridFontSize}"
+                                      PreviewKeyDown="ExcelDataGrid_PreviewKeyDown">
+                                <DataGrid.Resources>
+                                    <Style TargetType="DataGridRow">
+                                        <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}"/>
+                                        <Setter Property="Height" Value="32"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="White" Opacity="0.1"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                    <Style TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="White" Opacity="0.1"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Property="Foreground" Value="{Binding ElementName=MainWin, Path=TextBrush}"/>
+                                        <Setter Property="Padding" Value="10,8"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                    </Style>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="Padding" Value="8,0"/>
+                                    </Style>
+                                </DataGrid.Resources>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Border>
-            <TextBlock Text="📋 Data Forhåndsvisning" FontSize="22" FontWeight="SemiBold" 
-                     Foreground="White" VerticalAlignment="Center"/>
-            <TextBlock x:Name="RowCountText" 
-                     Text="0 rader"
-                     HorizontalAlignment="Right"
-                     FontSize="16"
-                     Foreground="White"
-                     Opacity="0.7"
-                     Margin="30,0,0,0"
-                     VerticalAlignment="Center"/>
-        </StackPanel>
-
-        <!-- Search Bar (Kompakt) -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
-            <TextBlock Text="🔍" FontSize="14" 
-                     VerticalAlignment="Center" Margin="0,0,5,0" 
-                     Foreground="White" Opacity="0.8"/>
-            
-            <Border Background="White"
-                    CornerRadius="6"
-                    Padding="0">
-                <TextBox x:Name="DataSearchTextBox" 
-                         Width="250"
-                         Height="32"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         Foreground="Black"
-                         VerticalAlignment="Center"
-                         VerticalContentAlignment="Center"
-                         TextChanged="DataSearchTextBox_TextChanged"
-                         ToolTip="Søk i alle kolonner"
-                         Padding="8,6"/>
-            </Border>
-
-            <TextBlock x:Name="SearchResultsText"
-                     Text=""
-                     Foreground="White"
-                     Opacity="0.7"
-                     FontSize="11"
-                     VerticalAlignment="Center"
-                     Margin="8,0,8,0"/>
-
-            <Button x:Name="ClearSearchButton"
-                    Content="✕"
-                    Click="ClearSearchButton_Click"
-                    Style="{StaticResource SecondaryButton}"
-                    Width="32"
-                    Height="32"
-                    Padding="0"
-                    FontSize="12"
-                    ToolTip="Tøm søk"/>
-        </StackPanel>
-
-        <!-- Data Preview Area -->
-        <Border Grid.Row="2" 
-                BorderThickness="2"
-                CornerRadius="15"
-                Padding="20">
-            <Border.BorderBrush>
-                <SolidColorBrush Color="White" Opacity="0.2"/>
-            </Border.BorderBrush>
-            <Border.Background>
-                <SolidColorBrush Color="Black" Opacity="0.2"/>
-            </Border.Background>
-
-            <!-- Empty State or DataGrid -->
-            <Grid x:Name="DataContainer">
-                <!-- Empty State -->
-                <StackPanel x:Name="EmptyState" 
-                          HorizontalAlignment="Center" 
-                          VerticalAlignment="Center"
-                          Visibility="Visible">
-                    <TextBlock Text="📊" FontSize="48" 
-                             HorizontalAlignment="Center" 
-                             Margin="0,0,0,20"
-                             Foreground="White" 
-                             Opacity="0.7"/>
-                    <TextBlock Text="Dra og slipp Excel-fil her eller klikk 'Last opp Excel'" 
-                             FontSize="16" 
-                             HorizontalAlignment="Center"
-                             Foreground="White" 
-                             Opacity="0.7"
-                             TextWrapping="Wrap"
-                             TextAlignment="Center"/>
-                </StackPanel>
-
-                <!-- DataGrid -->
-                <DataGrid x:Name="ExcelDataGrid" 
-                          AutoGenerateColumns="True" 
-                          CanUserAddRows="False"
-                          CanUserReorderColumns="True"
-                          CanUserResizeColumns="True"
-                          CanUserSortColumns="True"
-                          VirtualizingPanel.IsVirtualizing="True"
-                          VirtualizingPanel.VirtualizationMode="Recycling"
-                          ScrollViewer.CanContentScroll="True"
-                          EnableRowVirtualization="True"
-                          EnableColumnVirtualization="True"
-                          GridLinesVisibility="All"
-                          HorizontalGridLinesBrush="#33FFFFFF"
-                          VerticalGridLinesBrush="#33FFFFFF"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          Foreground="White"
-                          Visibility="Collapsed"
-                          PreviewKeyDown="ExcelDataGrid_PreviewKeyDown">
-                    <DataGrid.Resources>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="{Binding [6], Converter={StaticResource GroupConverter}}" />
-                            <Setter Property="Height" Value="35"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background">
-                                        <Setter.Value>
-                                            <SolidColorBrush Color="White" Opacity="0.1"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background">
-                                        <Setter.Value>
-                                            <SolidColorBrush Color="White" Opacity="0.2"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background">
-                                <Setter.Value>
-                                    <SolidColorBrush Color="White" Opacity="0.15"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="Padding" Value="12,10"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="FontSize" Value="13"/>
-                            <Setter Property="BorderBrush">
-                                <Setter.Value>
-                                    <SolidColorBrush Color="White" Opacity="0.2"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter Property="BorderThickness" Value="0,0,1,0"/>
-                        </Style>
-
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Padding" Value="8,0"/>
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background">
-                                        <Setter.Value>
-                                            <SolidColorBrush Color="White" Opacity="0.1"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.Resources>
-                </DataGrid>
-            </Grid>
-        </Border>
-    </Grid>
-</Border>
         </Grid>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Style="{StaticResource GlassCard}" Margin="20,20,20,20" Padding="15,10">
+        <!-- Status Bar - Kompakt -->
+        <Border Grid.Row="3" Style="{StaticResource GlassCard}" Margin="20,0,20,20" Padding="12,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="#4ecdc4">
-                        <Ellipse.Triggers>
-                            <EventTrigger RoutedEvent="Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                       From="1" To="0.3" Duration="0:0:2" AutoReverse="True"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Ellipse.Triggers>
+                    <Ellipse Width="6" Height="6" Margin="0,0,6,0">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="{Binding ElementName=MainWin, Path=SuccessBrush.(SolidColorBrush.Color)}"/>
+                        </Ellipse.Fill>
                     </Ellipse>
-                    <TextBlock x:Name="StatusText" 
-                             Text="Klar" 
-                             Foreground="White" 
-                             VerticalAlignment="Center"
-                             FontSize="13"
-                             FontWeight="Medium"/>
+                    <TextBlock x:Name="StatusText" Text="Klar" 
+                               Foreground="{Binding ElementName=MainWin, Path=TextBrush}" 
+                               VerticalAlignment="Center" FontSize="11"/>
                 </StackPanel>
-
-                <TextBlock Grid.Column="1" Text="Versjon 2.0" 
-                         Foreground="White" 
-                         Opacity="0.7"
-                         VerticalAlignment="Center"
-                         FontSize="14"/>
+                <TextBlock Grid.Column="1" Text="v2.0" 
+                           Foreground="{Binding ElementName=MainWin, Path=TextBrush}" 
+                           Opacity="0.5" VerticalAlignment="Center" FontSize="10"/>
             </Grid>
         </Border>
     </Grid>

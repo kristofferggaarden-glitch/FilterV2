@@ -17,6 +17,110 @@ namespace FilterV1
 {
     public partial class MainWindow : Window
     {
+        #region Dependency Properties for Theming
+
+        public static readonly DependencyProperty AccentBrushProperty =
+            DependencyProperty.Register("AccentBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00d4ff"))));
+
+        public Brush AccentBrush
+        {
+            get => (Brush)GetValue(AccentBrushProperty);
+            set => SetValue(AccentBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty SuccessBrushProperty =
+            DependencyProperty.Register("SuccessBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00ff88"))));
+
+        public Brush SuccessBrush
+        {
+            get => (Brush)GetValue(SuccessBrushProperty);
+            set => SetValue(SuccessBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty DangerBrushProperty =
+            DependencyProperty.Register("DangerBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ff4757"))));
+
+        public Brush DangerBrush
+        {
+            get => (Brush)GetValue(DangerBrushProperty);
+            set => SetValue(DangerBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty DarkBackgroundBrushProperty =
+            DependencyProperty.Register("DarkBackgroundBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1a1a2e"))));
+
+        public Brush DarkBackgroundBrush
+        {
+            get => (Brush)GetValue(DarkBackgroundBrushProperty);
+            set => SetValue(DarkBackgroundBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty PanelBrushProperty =
+            DependencyProperty.Register("PanelBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#16213e"))));
+
+        public Brush PanelBrush
+        {
+            get => (Brush)GetValue(PanelBrushProperty);
+            set => SetValue(PanelBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty BackgroundColorProperty =
+            DependencyProperty.Register("BackgroundColor", typeof(Color), typeof(MainWindow),
+                new PropertyMetadata((Color)ColorConverter.ConvertFromString("#1a1a2e")));
+
+        public Color BackgroundColor
+        {
+            get => (Color)GetValue(BackgroundColorProperty);
+            set => SetValue(BackgroundColorProperty, value);
+        }
+
+        public static readonly DependencyProperty DataGridFontSizeProperty =
+            DependencyProperty.Register("DataGridFontSize", typeof(int), typeof(MainWindow),
+                new PropertyMetadata(13));
+
+        public int DataGridFontSize
+        {
+            get => (int)GetValue(DataGridFontSizeProperty);
+            set => SetValue(DataGridFontSizeProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonBackgroundBrushProperty =
+            DependencyProperty.Register("ButtonBackgroundBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush(Color.FromArgb(26, 0, 212, 255))));
+
+        public Brush ButtonBackgroundBrush
+        {
+            get => (Brush)GetValue(ButtonBackgroundBrushProperty);
+            set => SetValue(ButtonBackgroundBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonHoverBrushProperty =
+            DependencyProperty.Register("ButtonHoverBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush(Color.FromArgb(51, 0, 212, 255))));
+
+        public Brush ButtonHoverBrush
+        {
+            get => (Brush)GetValue(ButtonHoverBrushProperty);
+            set => SetValue(ButtonHoverBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBrushProperty =
+            DependencyProperty.Register("TextBrush", typeof(Brush), typeof(MainWindow),
+                new PropertyMetadata(new SolidColorBrush(Colors.White)));
+
+        public Brush TextBrush
+        {
+            get => (Brush)GetValue(TextBrushProperty);
+            set => SetValue(TextBrushProperty, value);
+        }
+
+        #endregion
+
         private CustomCrossSectionWindow _customCrossWindow;
         private string _filePath;
         private DataTable _dataTable;
@@ -35,6 +139,8 @@ namespace FilterV1
         private readonly string _removeRelaySettingsFilePath;
         private readonly string _conversionRulesSettingsFilePath;
         private readonly string _risingExceptionsFilePath;
+        private readonly string _preferencesFilePath;
+        private AppPreferences _appPreferences;
 
         private List<string> _risingNumberExceptions = new List<string>();
         private List<CustomCrossSectionWindow.CrossRow> _customCrossRows = new List<CustomCrossSectionWindow.CrossRow>();
@@ -56,12 +162,17 @@ namespace FilterV1
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appDataPath, "FilterV1");
             Directory.CreateDirectory(appFolder);
+
             _settingsFilePath = Path.Combine(appFolder, "GroupSettings.json");
             _textFillSettingsFilePath = Path.Combine(appFolder, "TextFillSettings.json");
             _starDupesSettingsFilePath = Path.Combine(appFolder, "StarDupesSettings.json");
             _removeRelaySettingsFilePath = Path.Combine(appFolder, "RemoveRelaySettings.json");
             _conversionRulesSettingsFilePath = Path.Combine(appFolder, "ConversionRulesSettings.json");
             _risingExceptionsFilePath = Path.Combine(appFolder, "RisingExceptions.json");
+            _preferencesFilePath = Path.Combine(appFolder, "AppPreferences.json");
+
+            LoadPreferences();
+            ApplyPreferences();
 
             LoadRisingExceptions();
             LoadCustomGroups();
@@ -70,6 +181,44 @@ namespace FilterV1
             LoadRemoveRelayPatterns();
             LoadConversionRules();
         }
+
+        #region Preferences & Theming
+
+        private void LoadPreferences()
+        {
+            _appPreferences = AppPreferences.Load(_preferencesFilePath);
+        }
+
+        private void ApplyPreferences()
+        {
+            AccentBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.AccentColor));
+            SuccessBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.SuccessColor));
+            DangerBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.DangerColor));
+            DarkBackgroundBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.BackgroundColor));
+            PanelBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.PanelColor));
+            BackgroundColor = (Color)ColorConverter.ConvertFromString(_appPreferences.BackgroundColor);
+            TextBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_appPreferences.TextColor));
+
+            var accentColor = (Color)ColorConverter.ConvertFromString(_appPreferences.AccentColor);
+            ButtonBackgroundBrush = new SolidColorBrush(Color.FromArgb(26, accentColor.R, accentColor.G, accentColor.B));
+            ButtonHoverBrush = new SolidColorBrush(Color.FromArgb(51, accentColor.R, accentColor.G, accentColor.B));
+
+            DataGridFontSize = _appPreferences.DataGridFontSize;
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var prefsWindow = new PreferencesWindow(_appPreferences, prefs =>
+            {
+                _appPreferences = prefs;
+                _appPreferences.Save(_preferencesFilePath);
+                ApplyPreferences();
+            });
+            prefsWindow.Owner = this;
+            prefsWindow.ShowDialog();
+        }
+
+        #endregion
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -407,7 +556,7 @@ namespace FilterV1
         {
             ExcelDataGrid.ItemsSource = null;
             ExcelDataGrid.ItemsSource = _dataTable?.DefaultView;
-            StatusText.Text = $"{statusMessage} (Fjernet rader: {_rowsRemoved}, Total rader: {_dataTable?.Rows.Count ?? 0})";
+            StatusText.Text = $"{statusMessage}";
             UpdateRowCount();
 
             if (_dataTable != null && _dataTable.Rows.Count > 0)
@@ -501,6 +650,9 @@ namespace FilterV1
                 int displayedRows = view?.Count ?? _dataTable.Rows.Count;
                 int totalRows = _dataTable.Rows.Count;
 
+                TotalRowsText.Text = totalRows.ToString();
+                RemovedRowsText.Text = _rowsRemoved.ToString();
+
                 if (displayedRows == totalRows)
                 {
                     RowCountText.Text = $"{totalRows} rader";
@@ -512,6 +664,8 @@ namespace FilterV1
             }
             else
             {
+                TotalRowsText.Text = "0";
+                RemovedRowsText.Text = "0";
                 RowCountText.Text = "0 rader";
             }
         }
@@ -667,7 +821,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Stigende tall fjernet (begge retninger): {string.Join(", ", clearedCells.Take(5))}{(clearedCells.Count > 5 ? "..." : "")}");
+            UpdateGrid($"Stigende tall fjernet");
         }
 
         private void RemoveDefinedCellsButton_Click(object sender, RoutedEventArgs e)
@@ -704,11 +858,11 @@ namespace FilterV1
                         }
                     }
                     MoveCellsUpward();
-                    UpdateGrid($"Fjernet rader med matchende mønstre i samme rad (kol 5-6): {string.Join(", ", matchedRows.OrderByDescending(x => x))}");
+                    UpdateGrid($"Fjernet rader med matchende mønstre");
                 }
                 else
                 {
-                    UpdateGrid("Ingen fil lastet, mønstre definert men ikke anvendt");
+                    UpdateGrid("Ingen fil lastet");
                 }
             });
             window.Show();
@@ -989,7 +1143,7 @@ namespace FilterV1
                 }
             }
 
-            UpdateGrid($"Anvendt tekst utfylling til kolonne 2-4 i rader: {string.Join(", ", modifiedRows.OrderBy(x => x))}");
+            UpdateGrid($"Anvendt tekst utfylling");
         }
 
         private (string col2, string col3, string col4) GetOptionValues(int option)
@@ -1128,9 +1282,7 @@ namespace FilterV1
             _dataTable = sortedTable;
             MoveCellsUpward();
 
-            var activeGroups = groupedRows.Select(g => g.Group.ContainsText).ToList();
-            string groupSummary = string.Join(", ", activeGroups);
-            UpdateGrid($"Data sortert med prioritet tekst flyttet til venstre. Grupper: {groupSummary}");
+            UpdateGrid($"Data sortert");
         }
 
         private void ApplyStarDupes()
@@ -1191,11 +1343,11 @@ namespace FilterV1
                 if (bestLocation.HasValue)
                 {
                     _dataTable.Rows[bestLocation.Value.rowIndex][bestLocation.Value.colIndex] = duplicateValue + "*";
-                    modifiedCells.Add($"Rad {bestLocation.Value.rowIndex + 1}, Kolonne {bestLocation.Value.colIndex + 1}");
+                    modifiedCells.Add($"Rad {bestLocation.Value.rowIndex + 1}");
                 }
             }
 
-            UpdateGrid($"Anvendt stjerne markering til {modifiedCells.Count} duplikat celler: {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Anvendt stjerne markering");
         }
 
         private void ApplyRemoveRelay(List<RemoveRelayPattern> patternsToApply = null)
@@ -1218,19 +1370,17 @@ namespace FilterV1
                     {
                         if (cellValue.Contains(pattern.ContainsText))
                         {
-                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}");
+                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}");
                             row[j] = string.Empty;
 
                             if (j > 0)
                             {
                                 row[j - 1] = string.Empty;
-                                modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j}");
                             }
 
                             if (j < _dataTable.Columns.Count - 1)
                             {
                                 row[j + 1] = string.Empty;
-                                modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 2}");
                             }
 
                             break;
@@ -1240,7 +1390,7 @@ namespace FilterV1
             }
 
             MoveCellsUpward();
-            UpdateGrid($"Fjernet irregulære celler og tilstøtende celler (begge sider): {string.Join(", ", modifiedCells.Take(10))}{(modifiedCells.Count > 10 ? "..." : "")}");
+            UpdateGrid($"Fjernet irregulære celler");
         }
 
         private void ApplyReorganizeCells()
@@ -1252,7 +1402,7 @@ namespace FilterV1
 
             if (_dataTable.Columns.Count < 6)
             {
-                UpdateGrid("Trenger minst 6 kolonner for reorganisering");
+                UpdateGrid("Trenger minst 6 kolonner");
                 return;
             }
 
@@ -1273,7 +1423,7 @@ namespace FilterV1
                 reorganizedRows++;
             }
 
-            UpdateGrid($"Reorganisert kolonner (5→2, 6→3, 2→4, 3→5, 4→6) for {reorganizedRows} rader");
+            UpdateGrid($"Reorganisert kolonner");
         }
 
         private void ApplyConversionRules()
@@ -1295,14 +1445,14 @@ namespace FilterV1
                         if (cellValue.Equals(rule.FromText, StringComparison.Ordinal))
                         {
                             row[j] = rule.ToText;
-                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}, Kol {j + 1}: '{rule.FromText}' → '{rule.ToText}'");
+                            modifiedCells.Add($"Rad {_dataTable.Rows.IndexOf(row) + 1}");
                             break;
                         }
                     }
                 }
             }
 
-            UpdateGrid($"Konvertert {modifiedCells.Count} celler til Durapart format: {string.Join(", ", modifiedCells.Take(5))}{(modifiedCells.Count > 5 ? "..." : "")}");
+            UpdateGrid($"Konvertert til Durapart");
         }
 
         private int GetTextPriority(string text)
@@ -1382,13 +1532,13 @@ namespace FilterV1
                     }
 
                     workbook.SaveAs(_filePath);
-                    StatusText.Text = "Fil overskrevet med farger";
+                    StatusText.Text = "Fil lagret";
                     _hasUnsavedChanges = false;
                 }
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Feil ved lagring av fil - {ex.Message}";
+                StatusText.Text = $"Feil ved lagring - {ex.Message}";
             }
         }
 
@@ -1468,8 +1618,8 @@ namespace FilterV1
                 }
             }
 
-            UpdateGrid($"Markerte {markedCount} umerkede duplikater med gul farge");
-            MessageBox.Show($"Markerte {markedCount} umerkede duplikater med gul farge i tabellen.",
+            UpdateGrid($"Markerte {markedCount} umerkede duplikater");
+            MessageBox.Show($"Markerte {markedCount} umerkede duplikater.",
                 "Markering fullført", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -1484,8 +1634,7 @@ namespace FilterV1
             var result = MessageBox.Show(
                 "Dette vil automatisk kjøre følgende filtre:\n\n" +
                 "1. Fjern =+LV+MX+XS\n" +
-                "2. Fjern Duplikater\n" +
-                "3-9. Funksjoner med vinduer (stopper for brukerinput)\n\n" +
+                "2. Fjern Duplikater\n\n" +
                 "Vil du fortsette?",
                 "Auto-Filtrer",
                 MessageBoxButton.YesNo,
@@ -1496,7 +1645,7 @@ namespace FilterV1
             RemoveAllButton_Click(sender, e);
             RemoveDupesButton_Click(sender, e);
 
-            StatusText.Text = "Auto-filtrer: Klar for steg 3 (Stigende Tall). Klikk på knappen for å fortsette.";
+            StatusText.Text = "Auto-filtrer fullført";
         }
     }
 
