@@ -309,22 +309,23 @@ namespace FilterV1
                 // Only copy data from column 5 and 6 when pasting from the data preview.
                 // If the pasted line contains six or more columns (tab/semicolon/comma separated), then
                 // assume the first four are columns 1–4 and use elements at index 4 and 5 for col5 and col6.
-                // Otherwise, fall back to using the first and second parts (for two‑column pastes).
+                // For lines with fewer than six parts, treat the first two values as columns 5 and 6.
                 string raw5 = string.Empty;
                 string raw6 = string.Empty;
                 if (parts.Length >= 6)
                 {
-                    // When there are 6 or more parts, assume columns are in the order 1–6 (and possibly more).
-                    // Column 5 corresponds to index 4 and column 6 to index 5.  Ignore any parts beyond 6.
+                    // When there are six or more parts, the input likely contains columns 1–6 (and beyond).
+                    // Use the 5th (index 4) and 6th (index 5) values as column 5 and column 6.
                     raw5 = parts[4].Trim();
                     raw6 = parts[5].Trim();
                 }
                 else if (parts.Length >= 2)
                 {
-                    // For shorter lines (2–5 parts), treat the last two values as columns 5 and 6.  This
-                    // effectively ignores any leading columns beyond the pair of interest.
-                    raw5 = parts[parts.Length - 2].Trim();
-                    raw6 = parts[parts.Length - 1].Trim();
+                    // For lines with fewer than six parts (for example when the user copies only columns 5 & 6,
+                    // or columns 5–7), assume the first two entries are the values from columns 5 and 6.  This
+                    // avoids accidentally pulling in values from later columns (e.g. column 7) when pasting.
+                    raw5 = parts[0].Trim();
+                    raw6 = parts[1].Trim();
                 }
                 else if (parts.Length == 1)
                 {
